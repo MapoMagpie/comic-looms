@@ -5,13 +5,15 @@ import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
 const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
+const NIYANIYA_API_HOST = "api.schale.network";
 
 type BookDataDetail = {
-  id?: string, public_key?: string, size: number,
+  id?: string, key?: string, size: number,
 }
 
 type BookData = {
   base: string,
+  fallback: string,
   entries: BookItem[],
 }
 
@@ -28,13 +30,13 @@ type BookTag = {
 
 type BookDetail = {
   id: number,
-  public_key: string,
+  key: string,
+  created_at: number,
   title: string,
   data: Record<string, BookDataDetail>,
   thumbnails: BookData,
   tags: BookTag[],
-  created_at: number,
-  updated_at: number,
+  // updated_at: number,
 }
 
 const NAMESPACE_MAP: Record<number, string> = {
@@ -71,23 +73,30 @@ class NiyaniyaMatcher extends BaseMatcher<string> {
   }
 
   async parseImgNodes(source: string): Promise<ImageNode[]> {
-    const matches = source.match(REGEXP_EXTRACT_GALLERY_ID)
+    const matches = source.match(REGEXP_EXTRACT_GALLERY_ID);
+    const crt = window.localStorage.getItem("clearance");
+    if (!crt) throw new Error("cannot get clearance from localStorage");
     if (!matches || matches.length < 2) {
       throw new Error("invaild url: " + source);
     }
     const galleryID = matches[1];
-    const detailAPI = `https://api.niyaniya.moe/books/detail/${galleryID}`;
-    const detail = await window.fetch(detailAPI).then(res => res.json()).then(j => j as BookDetail).catch(reason => new Error(reason.toString()));
-    if (detail instanceof Error) {
-      throw detail;
+    const detailAPI = `https://${NIYANIYA_API_HOST}/books/detail/${galleryID}`;
+    const detailDataAPI = `https://${NIYANIYA_API_HOST}/books/detail/${galleryID}?crt=${crt}`;
+    const [detail, detailData] = await Promise.all([
+      window.fetch(detailAPI).then(res => res.json()).then(j => j as BookDetail).catch(Error),
+      window.fetch(detailDataAPI, { method: "POST" }).then(res => res.json()).then(j => j as Pick<BookDetail, "data">).catch(Error),
+    ]);
+    if (detail instanceof Error || detailData instanceof Error) {
+      throw new Error("failed to obtain data, perhaps the API of this site has changed");
     }
+    detail.data = detailData.data;
     this.createMeta(detail);
-    const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== undefined && v.public_key !== undefined) ?? [undefined, undefined];
+    const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== undefined && v.key !== undefined) ?? [undefined, undefined];
     if (w === undefined && data === undefined) throw new Error("cannot find resolution from gallery detail");
-    const dataAPI = `https://api.niyaniya.moe/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
-    const items = await window.fetch(dataAPI).then(res => res.json()).then(j => j as BookData).catch(reason => new Error(reason.toString()));
+    const dataAPI = `https://${NIYANIYA_API_HOST}/books/data/${galleryID}/${data.id}/${data.key}/${w}?crt=${crt}`;
+    const items = await window.fetch(dataAPI).then(res => res.json()).then(j => j as BookData).catch(Error);
     if (items instanceof Error) {
-      throw new Error(`koharu updated their api, ${items.toString()}`);
+      throw new Error("failed to obtain data, perhaps the API of this site has changed");
     }
     if (items.entries.length !== detail.thumbnails.entries.length) {
       throw new Error("thumbnails length not match");
@@ -100,7 +109,7 @@ class NiyaniyaMatcher extends BaseMatcher<string> {
     return items.entries.map((item, i) => {
       const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
       const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
-      const src = itemBase + item.path + "?w=" + w;
+      const src = itemBase + item.path;
       return new ImageNode(thumbBase + thumbs[i].path, href, title, undefined, src, { w: item.dimensions[0], h: item.dimensions[1] });
     });
   }
@@ -115,11 +124,10 @@ class NiyaniyaMatcher extends BaseMatcher<string> {
   }
 
 }
-// FIXME this site is no longer working
 ADAPTER.addSetup({
   name: "niyaniya.moe",
   workURLs: [
-    /niyaniya.moe\/(g|reader)\/\d+\/\w+/
+    /(niyaniya.moe|shupogaki.moe|hoshino.one)\/(g|reader)\/\d+\/\w+/
   ],
   match: ["https://niyaniya.moe/*"],
   constructor: () => new NiyaniyaMatcher(),
