@@ -6,23 +6,13 @@ import relocateElement from "../utils/relocate-element";
 import { Events } from "./event";
 
 export class ConfigPanel {
-
+  root: HTMLElement;
   panel: HTMLElement;
-
   configSelect: HTMLElement;
 
   constructor(root: HTMLElement) {
+    this.root = root;
     this.panel = q("#config-panel", root);
-    // tooltip hovering
-    this.panel.querySelectorAll<HTMLElement>(".p-tooltip").forEach(element => {
-      const child = element.querySelector<HTMLElement>(".p-tooltiptext");
-      if (!child) return;
-      element.addEventListener("mouseenter", () => {
-        child.style.display = "block";
-        relocateElement(child, element, root.offsetWidth, root.offsetHeight);
-      });
-      element.addEventListener("mouseleave", () => child.style.display = "none");
-    });
 
     this.configSelect = q("#config-a-select", root);
   }
@@ -94,6 +84,16 @@ export class ConfigPanel {
           q(`#${item.key}Select`, this.panel).addEventListener("change", () => events.modSelectConfigEvent(item.key as ConfigSelectType));
           break;
       }
+    });
+    // tooltip hovering
+    this.panel.querySelectorAll<HTMLElement>(".p-tooltip").forEach(element => {
+      const child = element.querySelector<HTMLElement>(".p-tooltiptext");
+      if (!child) return;
+      element.addEventListener("mouseenter", () => {
+        child.style.display = "block";
+        relocateElement(child, element, this.root.offsetWidth, this.root.offsetHeight);
+      });
+      element.addEventListener("mouseleave", () => child.style.display = "none");
     });
   }
 
