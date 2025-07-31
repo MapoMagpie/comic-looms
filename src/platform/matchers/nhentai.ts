@@ -16,21 +16,47 @@ function nhParseExt(str: string): string {
   }
 }
 
+type NHGalleryInfo = {
+  id: number,
+  images: {
+    cover: { t: string, w: number, h: number, }
+    pages: { t: string, w: number, h: number }[],
+    thumbnail: { t: string, w: number, h: number, }
+  },
+  media_id: string,
+  num_pages: number,
+  tags: { id: number, type: string, name: string, url: string, count: number }[],
+  title: { english: string, japanese?: string },
+}
+
 class NHMatcher extends BaseMatcher<Document> {
   meta?: GalleryMeta;
+  imageCDNUrls?: string[];
   galleryMeta(): GalleryMeta {
     return this.meta!;
   }
   parseInfo() {
-    const mediaServer = Array.from(document.querySelectorAll("body > script"))
-      .find(ele => ele.textContent?.trim()?.startsWith("window._n_app"))
-      ?.textContent?.match(/media_server:\s?(\d+)/)?.[1];
-    if (!mediaServer) throw new Error("cannot find media server");
-    const raw = Array.from(document.querySelectorAll("body > script"))
-      .find(ele => ele.textContent?.trim()?.startsWith("window._gallery"))
-      ?.textContent?.match(/parse\((.*)\);/)?.[1];
-    if (!raw) throw new Error("cannot find images info");
-    const info = JSON.parse(JSON.parse(raw)) as { media_id: string, images: { pages: { t: string, w: number, h: number }[] }, title: { english: string, japanese?: string }, tags: { type: string, name: string }[] };
+    let nRaw = "";
+    let gRaw = "";
+    Array.from(document.querySelectorAll("body > script")).forEach(ele => {
+      const textContent = ele.textContent;
+      if (textContent) {
+        if (textContent.trimStart().startsWith("window._n_app")) {
+          nRaw = textContent;
+        }
+        if (textContent.trimStart().startsWith("window._gallery")) {
+          gRaw = textContent;
+        }
+      }
+    });
+    // const csrfToken = nRaw.match(/csrf_token:\s?"(.*?)",/)?.[1];
+    const thumbCDNUrls = nRaw.match(/thumb_cdn_urls:\s?\[(.*?)\],/)?.[1]?.split(",").map(t => t.trim().replaceAll("\"", ""));
+    const imageCDNUrls = nRaw.match(/image_cdn_urls:\s?\[(.*?)\],/)?.[1]?.split(",").map(t => t.trim().replaceAll("\"", ""));
+    if (!thumbCDNUrls || thumbCDNUrls.length === 0) throw new Error("cannot find thumb_cdn_urls from script");
+    if (!imageCDNUrls || imageCDNUrls.length === 0) throw new Error("cannot find image_cdn_urls from script");
+    const jsonRaw = gRaw.match(/parse\((.*)\);/)?.[1];
+    if (!jsonRaw) throw new Error("cannot find images info");
+    const info = JSON.parse(JSON.parse(jsonRaw)) as NHGalleryInfo;
     // parse gallery meta
     const meta = new GalleryMeta(window.location.href, info.title.english);
     meta.originTitle = info.title.japanese;
@@ -42,17 +68,26 @@ class NHMatcher extends BaseMatcher<Document> {
       return prev;
     }, {});
     this.meta = meta;
-    return { info, mediaServer };
+    return { info, thumbCDNUrls, imageCDNUrls };
   }
-  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+  async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
+    if (retry) {
+      const regex = /https:\/\/(.*?)\//;
+      const cdn = node.originSrc?.match(regex)?.[1];
+      const index = this.imageCDNUrls?.indexOf(cdn ?? "") ?? -1;
+      if (index > -1) {
+        const originSrc = node.originSrc!.replace(regex, `https://${this.imageCDNUrls![(index + 1) % this.imageCDNUrls!.length]}/`)
+        return { url: originSrc };
+      }
+    }
     return { url: node.originSrc! };
   }
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     await sleep(200);
-    const nodes = Array.from((doc).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb") ?? []);
+    const nodes = Array.from(doc.querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb"));
     if (nodes.length == 0) throw new Error("cannot find image nodes")
-    const { info, mediaServer } = this.parseInfo();
-    const mediaID = info.media_id;
+    const { info, imageCDNUrls } = this.parseInfo();
+    this.imageCDNUrls = imageCDNUrls;
     const digits = nodes.length.toString().length;
     const ret = [];
     for (let i = 0; i < nodes.length; i++) {
@@ -61,7 +96,8 @@ class NHMatcher extends BaseMatcher<Document> {
       const title = (i + 1).toString().padStart(digits, "0");
       const ext = nhParseExt(info.images.pages[i].t);
       const href = location.origin + node.getAttribute("href");
-      const originSrc = `${window.location.origin.replace("//", "//i" + mediaServer + ".")}/galleries/${mediaID}/${i + 1}.${ext}`;
+      const cdn = imageCDNUrls[i % imageCDNUrls.length];
+      const originSrc = `https://${cdn}/galleries/${info.media_id}/${i + 1}.${ext}`;
       const wh = { w: info.images.pages[i].w, h: info.images.pages[i].h };
       ret.push(new ImageNode(thumbSrc, href, title + "." + ext, undefined, originSrc, wh));
     }
