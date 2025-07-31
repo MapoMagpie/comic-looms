@@ -1,24 +1,26 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+name: Bug Report
+about: Please describe the issue you encountered in detail to help us improve.
+title: '[Bug]'
+labels: 'Bug'
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
-在此处描述问题
+**Issue Details**
+> Please describe in detail what problem occurred with this script.
 
-**Browser And Version**
-Which Browser Do You Use? And Browser Version
-你使用什么浏览器与版本？
+**Which Site**
+> On which site did the issue occur? Or is it unrelated to any specific site?
 
-**Log**
-Press F12, Open Browser Console. Export or Copy Console Log.
-打开浏览器控制台，导出或复制控制台日志，粘贴到此处。
+**Browser and Version**
+> The browser you are using and its version.
+
+**Script Manager**
+> Tampermonkey or Violentmonkey.
+
+**Console Logs**
+> Press F12 on the problem page to open the browser console, copy the logs or right-click on a blank area to export them, then paste or upload them here.
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem.
-如果可以，请提供安全的图片
+> If possible, please provide screenshots showing the issue.
