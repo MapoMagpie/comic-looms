@@ -300,7 +300,7 @@ class E621Matcher extends DanbooruMatcher {
 ADAPTER.addSetup({
   name: "e621",
   workURLs: [
-    /konachan.com\/post(?!\/show\/.*)/
+    /e621.net\/((posts|favorites)(?!\/)|$)/
   ],
   match: ["https://e621.net/*"],
   constructor: () => new E621Matcher(),
