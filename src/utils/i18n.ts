@@ -716,6 +716,38 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist',
   ],
 
+  latestArtWorks: [
+    "The Latest Artworks",
+    "最新作品",
+    "최신 예술 작품",
+    "Las últimas obras de arte",
+  ],
+
+  afterLastReading: [
+    "After  Last Reading",
+    "上次阅读之后",
+    "마지막으로 읽은 후",
+    "Después de la última lectura",
+  ],
+  beforeLastReading: [
+    "Before Last Reading",
+    "上次阅读之前",
+    "마지막으로 읽기 전에",
+    "Antes de la última lectura",
+  ],
+  allArtWorks: [
+    "All Artworks",
+    "全部作品",
+    "모든 작품",
+    "Todas las obras de arte",
+  ],
+  currentArtWorks: [
+    "Artwork On The Current Page",
+    "当前页的作品",
+    "현재 페이지의 아트워크",
+    "Obra de arte en la página actual",
+  ],
+
   help: [
     `
 <h2>[How to Use? Where is the Entry?]</h2>

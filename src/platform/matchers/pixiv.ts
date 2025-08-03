@@ -8,6 +8,7 @@ import { batchFetch } from "../../utils/query";
 import { Chapter } from "../../page-fetcher";
 import EBUS from "../../event-bus";
 import { ADAPTER } from "../adapt";
+import { i18n } from "../../utils/i18n";
 
 type AuthorPIDs = {
   id?: string,
@@ -120,37 +121,69 @@ class PixivHomeAPI implements PixivAPI {
 }
 
 class PixivArtistWorksAPI implements PixivAPI {
-  first?: string;
   author?: string;
+  chapterPids: Map<number, string[]> = new Map();
   title(): string {
     return this.author ?? "author";
   }
-  async fetchChapters(): Promise<Chapter[]> {
-    return [new Chapter(1, "Default", window.location.href)];
+  constructor() {
+    EBUS.subscribe("ifq-do", (_index, imf) => {
+      // console.log("pixiv read at: ", index, imf.node.href);
+      window.localStorage.setItem(`cl-${this.author}-last-read`, imf.node.href);
+    });
   }
-  async *next(_ch: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
+  async fetchChapters(): Promise<Chapter[]> {
     this.author = findAuthorID();
     if (!this.author) throw new Error("Cannot find author id!");
-    this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
-    if (this.first) {
-      yield Result.ok([{ id: this.author, pids: [this.first] }]);
-      while (ADAPTER.conf.pixivJustCurrPage) {
-        yield Result.ok([]);
-      }
-    }
     // request all illusts from https://www.pixiv.net/ajax/user/{author}/profile/all
-    const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then(resp => resp.json());
+    const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then(resp => resp.json()).catch(Error);
+    if (res instanceof Error) throw res;
     if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
     let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-    if (ADAPTER.conf.pixivAscendWorks) {
-      pidList = pidList.sort((a, b) => parseInt(a) - parseInt(b));
-    } else {
-      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    const latest = window.localStorage.getItem(`cl-${this.author}-latest`);
+    // save latest art work pid
+    window.localStorage.setItem(`cl-${this.author}-latest`, pidList[0]);
+    const lastRead = window.localStorage.getItem(`cl-${this.author}-last-read`)?.match(/artworks\/(\d+)$/)?.[1];
+    const chapters = [];
+
+    const currArtWork = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+    if (currArtWork) {
+      const chapter = new Chapter(chapters.length + 1, i18n.currentArtWorks.get(), "");
+      this.chapterPids.set(chapter.id, [currArtWork]);
+      chapters.push(chapter);
     }
-    // remove this.first from pidList
-    if (this.first) {
-      const index = pidList.indexOf(this.first);
-      if (index > -1) pidList.splice(index, 1);
+    const latestIndex = latest ? pidList.indexOf(latest) : -1;
+    if (latestIndex > 0) {
+      const chapter = new Chapter(chapters.length + 1, i18n.latestArtWorks, "");
+      const sliced = [...pidList.slice(0, latestIndex)];
+      this.chapterPids.set(chapter.id, sliced);
+      chapters.push(chapter);
+    }
+
+    const lastReadIndex = lastRead ? pidList.indexOf(lastRead) : -1;
+    if (lastReadIndex > 0 && lastReadIndex < pidList.length - 1) {
+      const chapterAfterRead = new Chapter(chapters.length + 1, ADAPTER.conf.pixivAscendWorks ? i18n.beforeLastReading.get() : i18n.afterLastReading.get(), "");
+      const slicedAfter = [...pidList.slice(lastReadIndex)];
+      this.chapterPids.set(chapterAfterRead.id, slicedAfter);
+      chapters.push(chapterAfterRead);
+
+      const chapterBeforeRead = new Chapter(chapters.length + 1, ADAPTER.conf.pixivAscendWorks ? i18n.afterLastReading.get() : i18n.beforeLastReading.get(), "");
+      const slicedBefore = [...pidList.slice(0, lastReadIndex + 1)];
+      this.chapterPids.set(chapterBeforeRead.id, slicedBefore);
+      chapters.push(chapterBeforeRead);
+    }
+
+    const chapter = new Chapter(chapters.length + 1, i18n.allArtWorks.get(), "");
+    this.chapterPids.set(chapter.id, pidList);
+    chapters.push(chapter);
+    return chapters;
+  }
+  async *next(chapter: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
+    let pidList = this.chapterPids.get(chapter.id);
+    if (!pidList) throw new Error("cannot get pid list of " + chapter.title);
+    if (ADAPTER.conf.pixivAscendWorks) {
+      pidList = pidList.reverse();
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
@@ -160,6 +193,7 @@ class PixivArtistWorksAPI implements PixivAPI {
 }
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
+type PageData = { error: boolean, message: string, body: Page[] };
 class PixivMatcher extends BaseMatcher<AuthorPIDs[]> {
   api: PixivAPI;
   meta: GalleryMeta;
@@ -168,6 +202,7 @@ class PixivMatcher extends BaseMatcher<AuthorPIDs[]> {
   ugoiraMetas: Record<string, UgoiraMeta> = {};
   convertor?: FFmpegConvertor;
   csrfToken?: string;
+  pidDatas: Map<string, PageData | Error> = new Map();
 
   constructor() {
     super();
@@ -259,6 +294,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return this.api.next(chapter);
   }
 
+  async fetchPidAndData(pids: string[]): Promise<[string, PageData | Error][]> {
+    const needFetched = pids.filter(p => !this.pidDatas.has(p));
+    const dataList = await batchFetch<PageData>(needFetched.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
+    for (let i = 0; i < needFetched.length; i++) {
+      this.pidDatas.set(needFetched[i], dataList[i]);
+    }
+    return pids.map(p => ([p, this.pidDatas.get(p)!]));
+  }
+
   async parseImgNodes(aps: AuthorPIDs[]): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
     if (aps.length === 0) return list;
@@ -276,13 +320,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     } else {
       pids.sort((a, b) => parseInt(b) - parseInt(a));
     }
-    type PageData = { error: boolean, message: string, body: Page[] };
-    const pageListData = await batchFetch<PageData>(pids.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
-    for (let i = 0; i < pids.length; i++) {
-      const pid = pids[i];
-      const data = pageListData[i];
-      if (data instanceof Error || data.error) {
-        const reason = `pid:[${pid}], ${data.message}`;
+    const pidDatas = await this.fetchPidAndData(pids);
+    for (let i = 0; i < pidDatas.length; i++) {
+      const [pid, data] = pidDatas[i];
+      if (!data || data instanceof Error || data.error) {
+        const reason = `pid:[${pid}], ${data?.message}`;
         evLog("error", reason);
         EBUS.emit("notify-message", "error", reason, 8000);
         continue;
