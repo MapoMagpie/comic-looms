@@ -111,7 +111,7 @@ export class ChaptersPanel {
 
   static html() {
     return `
-<div id="chapters-panel" class="p-panel p-chapters p-collapse">
+<div id="chapters-panel" class="p-panel p-chapters p-panel-large p-collapse">
     <div id="chapter-thumbnail" class="chapter-thumbnail">
       <div id="chapter-thumbnail-image-container" style="display:none;">
         <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" />

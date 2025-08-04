@@ -23,7 +23,7 @@ export class EventManager {
     return ret;
   }
   subscribe<ID extends EventID>(id: ID, cb: Events[ID]) {
-    evLog("info", "event bus subscribed: ", id);
+    // evLog("info", "event bus subscribed: ", id);
     const cbs = this.events.get(id);
     if (cbs) {
       cbs.push(cb);
