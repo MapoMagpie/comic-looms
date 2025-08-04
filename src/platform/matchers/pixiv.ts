@@ -135,11 +135,10 @@ class PixivArtistWorksAPI implements PixivAPI {
     this.author = findAuthorID();
     if (!this.author) throw new Error("Cannot find author id!");
     // request all illusts from https://www.pixiv.net/ajax/user/{author}/profile/all
-    // const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then(resp => resp.json()).catch(Error);
-    // if (res instanceof Error) throw res;
-    // if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
-    // let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-    let pidList: string[] = [];
+    const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then(resp => resp.json()).catch(Error);
+    if (res instanceof Error) throw res;
+    if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
+    let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
     pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
     const latest = window.localStorage.getItem(`cl-${this.author}-latest`);
     // save latest art work pid
@@ -163,17 +162,16 @@ class PixivArtistWorksAPI implements PixivAPI {
 
     if (ADAPTER.conf.pixivRecordReading) {
       const lastRead = window.localStorage.getItem(`cl-${this.author}-last-read`)?.match(/artworks\/(\d+)$/)?.[1];
-      // const lastReadIndex = lastRead ? pidList.indexOf(lastRead) : -1;
-      // if (lastReadIndex > 0 && lastReadIndex < pidList.length - 1) {
-      if (lastRead) {
+      const lastReadIndex = lastRead ? pidList.indexOf(lastRead) : -1;
+      if (lastReadIndex > 0 && lastReadIndex < pidList.length - 1) {
         const chapterAfterRead = new Chapter(chapters.length + 1, ADAPTER.conf.pixivAscendWorks ? i18n.beforeLastReading.get() : i18n.afterLastReading.get(), "");
-        // const slicedAfter = [...pidList.slice(lastReadIndex)];
-        // this.chapterPids.set(chapterAfterRead.id, slicedAfter);
+        const slicedAfter = [...pidList.slice(lastReadIndex)];
+        this.chapterPids.set(chapterAfterRead.id, slicedAfter);
         chapters.push(chapterAfterRead);
 
         const chapterBeforeRead = new Chapter(chapters.length + 1, ADAPTER.conf.pixivAscendWorks ? i18n.afterLastReading.get() : i18n.beforeLastReading.get(), "");
-        // const slicedBefore = [...pidList.slice(0, lastReadIndex + 1)];
-        // this.chapterPids.set(chapterBeforeRead.id, slicedBefore);
+        const slicedBefore = [...pidList.slice(0, lastReadIndex + 1)];
+        this.chapterPids.set(chapterBeforeRead.id, slicedBefore);
         chapters.push(chapterBeforeRead);
       }
     }
