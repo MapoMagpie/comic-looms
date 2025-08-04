@@ -93,12 +93,6 @@ Además, hay otros métodos:
 
 Hay un botón de **Perfiles de Sitio** en la parte inferior del panel de configuración. Haz clic en él para excluir ciertos sitios de la apertura automática. Por ejemplo, sitios como Twitter o de tipo Booru.
 
-## [¿Cómo desactivar este script en ciertos sitios?]
-
-Hay un botón de **Perfiles de Sitio** en la parte inferior del panel de configuración para excluir sitios específicos. Una vez excluidos, el script ya no se activará en esos sitios.
-
-Para volver a habilitar un sitio, necesitas hacerlo desde un sitio que no haya sido excluido.
-
 ## [¿Cómo apoyar al autor?]
 
 Déjame una estrella en [Github](https://github.com/MapoMagpie/eh-view-enhance) o una buena reseña en [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance).

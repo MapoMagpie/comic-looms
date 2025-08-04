@@ -108,12 +108,6 @@ You can even configure it for one-handed full keyboard operation, freeing up you
 
 There's a **Site Profiles** button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.
 
-## [How to Disable This Script on Certain Sites?]
-
-There's a **Site Profiles** button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.
-
-To re-enable a site, you need to do so from a site that hasn't been excluded.
-
 ## [How to Feed the Author]
 
 Give me a star on [Github](https://github.com/MapoMagpie/eh-view-enhance) or a good review on [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance).

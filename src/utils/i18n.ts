@@ -833,11 +833,6 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 <h2>[Can I Operate the Script via Keyboard?]</h2>
 <p>Yes! There&#39;s a <strong>Keyboard</strong> button at the bottom of the configuration panel. Click it to view or configure keyboard operations.</p>
 <p>You can even configure it for one-handed full keyboard operation, freeing up your other hand!</p>
-<h2>[How to Disable Auto-Open on Certain Sites?]</h2>
-<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
-<h2>[How to Disable This Script on Certain Sites?]</h2>
-<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
-<p>To re-enable a site, you need to do so from a site that hasn&#39;t been excluded.</p>
 <h2>[How to Feed the Author]</h2>
 <p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
 <p>Please do not review on Greasyfork, as its notification system cannot track subsequent feedback. Many people leave an issue and never back.
@@ -917,11 +912,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>[可以通过键盘来操作吗？]</h2>
 <p>可以！在配置面板的下方，有一个<strong>快捷键</strong>按钮，点击后可以查看键盘操作，或进行配置。</p>
 <p>甚至可以配置为单手全键盘操作，解放另一只手！</p>
-<h2>[不想在某些网站启用自动打开功能？]</h2>
-<p>在配置面板的下方，有一个<strong>站点配置</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
-<h2>[不想在某些网站使用这个脚本？]</h2>
-<p>在配置面板的下方，有一个<strong>站点配置</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
-<p>如果想重新启用该站点，需要在其他未排除的站点中启用被禁用的站点。</p>
 <h2>[如何Feed作者。]</h2>
 <p>给我<a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>上好评。</p>
 <p>请勿在Greasyfork上反馈问题，因为该站点的通知系统无法跟踪后续的反馈。很多人只是留下一个问题，再也没有回来过。
@@ -1085,11 +1075,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>[¿Puedo operar el script mediante el teclado?]</h2>
 <p>¡Sí! Hay un botón del <strong>Teclado</strong> en la parte inferior del panel de configuración. Haz clic en él para ver o configurar las operaciones del teclado.</p>
 <p>¡Incluso puedes configurarlo para operar con una sola mano, liberando así tu otra mano!</p>
-<h2>[¿Cómo desactivar la apertura automática en ciertos sitios?]</h2>
-<p>Hay un botón de <strong>Perfiles de Sitio<strong> en la parte inferior del panel de configuración. Haz clic en él para excluir ciertos sitios de la apertura automática. Por ejemplo, sitios como Twitter o de tipo Booru.</p>
-<h2>[¿Cómo desactivar este script en ciertos sitios?]</h2>
-<p>Hay un botón de <strong>Perfiles de Sitio</strong> en la parte inferior del panel de configuración para excluir sitios específicos. Una vez excluidos, el script ya no se activará en esos sitios.</p>
-<p>Para volver a habilitar un sitio, necesitas hacerlo desde un sitio que no haya sido excluido.</p>
 <h2>[¿Cómo apoyar al autor?]</h2>
 <p>Déjame una estrella en <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance'>Github</a> o una buena reseña en <a target='_blank' href='https://greasyfork.org/scripts/397848-e-hentai-view-enhance'>Greasyfork</a>.</p>
 <p>Por favor, no dejes reseñas en Greasyfork, ya que su sistema de notificaciones no puede rastrear comentarios posteriores. Muchas personas dejan un problema y nunca vuelven.

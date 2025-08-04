@@ -107,12 +107,6 @@
 
 在配置面板的下方，有一个**站点配置**按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。
 
-## [不想在某些网站使用这个脚本？]
-
-在配置面板的下方，有一个**站点配置**的按钮，可对一些站点进行排除，排除后脚本不会再生效。
-
-如果想重新启用该站点，需要在其他未排除的站点中启用被禁用的站点。
-
 ## [如何Feed作者。]
 
 给我[Github](https://github.com/MapoMagpie/eh-view-enhance)星星，或者[Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance)上好评。
