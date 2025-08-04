@@ -322,6 +322,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'Pixiv 현재 페이지만 로드',
     'Pixiv: Cargar solo la página actual'
   ],
+  pixivRecordReading: [
+    'Pixiv Record Reading',
+    'Pixiv记录阅读位置',
+    'Pixiv 기록읽기',
+    'Pixiv Lectura de registros'
+  ],
+  pixivRecordReadingTooltip: [
+    'Reading position recorded. A new chapter continuing from this position will be provided next time.',
+    '记录阅读位置，再次阅读时，将出现一个新的章节表示从该位置继续阅读。',
+    '읽기 위치가 기록되었습니다. 이 위치에서 이어지는 새로운 장은 다음에 제공될 예정입니다.',
+    'Posición de lectura registrada. La próxima vez se publicará un nuevo capítulo a partir de esta posición.'
+  ],
   pixivAscendWorks: [
     'Pixiv Ascending Works',
     'Pixiv升序排列作品',

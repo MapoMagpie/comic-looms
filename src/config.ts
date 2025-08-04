@@ -112,6 +112,8 @@ export type Config = {
   magnifier: boolean,
   /** directly enter into big image view */
   autoEnterBig: boolean,
+  /** Reading position recorded. A new chapter continuing from this position will be provided next time. */
+  pixivRecordReading: boolean,
   /** the aritst's works order, ascend true means old first */
   pixivAscendWorks: boolean,
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
@@ -181,6 +183,7 @@ export function defaultConf(): Config {
     customStyle: "",
     magnifier: false,
     autoEnterBig: false,
+    pixivRecordReading: false,
     pixivAscendWorks: false,
     filenameOrder: "auto",
     dragImageOut: false,
@@ -357,6 +360,7 @@ export type ConfigBooleanType = "fetchOriginal"
   | "reverseMultipleImagesPost"
   | "magnifier"
   | "autoEnterBig"
+  | "pixivRecordReading"
   | "pixivAscendWorks"
   | "hdThumbnails"
   | "dragImageOut"
@@ -407,6 +411,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "dragImageOut", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
+  { key: "pixivRecordReading", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   { key: "pixivAscendWorks", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
   { key: "excludeVideo", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com|kemono.cr)\// },
