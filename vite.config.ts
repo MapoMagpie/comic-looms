@@ -6,13 +6,9 @@ const VERSION = '4.12.5';
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
   let updateURL: string | undefined;
-  let outDir: string | undefined;
-  let emptyOutDir = true;
   if (command === 'build') {
     downloadURL = 'https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js';
     updateURL = 'https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.meta.js';
-    outDir = '';
-    emptyOutDir = false;
   }
   return {
     define: {
@@ -20,8 +16,6 @@ export default defineConfig(({ command }) => {
     },
     build: {
       target: 'esnext',
-      outDir,
-      emptyOutDir,
     },
     server: {
       host: '0.0.0.0',
