@@ -75,6 +75,7 @@ export type Config = {
   archiveVolumeSize: number
   /** 动图转换为 */
   pixivConvertTo: "GIF" | "MP4"
+  pixivImageServer?: string
   /** 自动收起控制面板 */
   autoCollapsePanel: boolean,
   /** 最小化控制栏 */
@@ -164,6 +165,7 @@ export function defaultConf(): Config {
     preventScrollPageTime: 100,
     archiveVolumeSize: 1200,
     pixivConvertTo: "GIF",
+    pixivImageServer: undefined,
     autoCollapsePanel: true,
     minifyPageHelper: IS_MOBILE ? "never" : "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
@@ -373,6 +375,8 @@ export type ConfigSelectType = "readMode"
   | "ehentaiTitlePrefer"
   | "filenameOrder"
   ;
+export type ConfigTextType = "pixivImageServer"
+  ;
 
 type OptionValue = {
   value: string;
@@ -381,10 +385,11 @@ type OptionValue = {
 
 // config panel
 export type ConfigItem = {
-  key: ConfigNumberType | ConfigBooleanType | ConfigSelectType;
-  typ: "boolean" | "number" | "select";
+  key: ConfigNumberType | ConfigBooleanType | ConfigSelectType | ConfigTextType;
+  typ: "boolean" | "number" | "select" | "input";
   i18nKey?: string;
   options?: OptionValue[];
+  placeholder?: string;
   gridColumnRange?: [number, number];
   displayInSite?: RegExp;
 }
@@ -413,6 +418,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivRecordReading", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   { key: "pixivAscendWorks", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
+  { key: "pixivImageServer", typ: "input", gridColumnRange: [1, 11], placeholder: "https://i.pixiv.re", displayInSite: /pixiv.net/ },
   { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
   { key: "excludeVideo", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com|kemono.cr)\// },
   {

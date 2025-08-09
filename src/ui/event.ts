@@ -1,4 +1,4 @@
-import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, ReadMode, saveConf } from "../config";
+import { ConfigBooleanType, ConfigTextType, ConfigNumberType, ConfigSelectType, ReadMode, saveConf } from "../config";
 import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
@@ -184,6 +184,18 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     if (key === "gridMode") {
       EBUS.emit("fvg-layout-change");
     }
+  }
+
+  // modify config
+  function modTextConfigEvent(key: ConfigTextType, value?: string) {
+    const inputElement = q<HTMLSelectElement>(`#${key}TextInput`, HTML.config.panel);
+    if (value) {
+      inputElement.value = value;
+    } else {
+      value = inputElement.value;
+    }
+    (ADAPTER.conf[key] as any) = value;
+    saveConf({ [key]: value }, ADAPTER.conf.selectedSiteNameConfig);
   }
 
   const cancelIDContext: Record<string, number> = {};
@@ -499,6 +511,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     modNumberConfigEvent,
     modBooleanConfigEvent,
     modSelectConfigEvent,
+    modTextConfigEvent,
 
     togglePanelEvent,
     showFullViewGrid,

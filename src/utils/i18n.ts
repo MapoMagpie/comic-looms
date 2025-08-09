@@ -318,13 +318,23 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
   ],
   pixivJustCurrPage: [
     'Pixiv Only Load Current Page',
-    'Pixiv仅加载当前作品页',
+    'Pixiv 仅加载当前作品页',
     'Pixiv 현재 페이지만 로드',
     'Pixiv: Cargar solo la página actual'
   ],
+  pixivJustCurrPageTooltip: [
+    "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>" +
+    'Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.',
+    '在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>' +
+    '注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。',
+    'Pixiv에서 현재 페이지가 작품 페이지일 경우, 해당 페이지의 이미지들만 로드합니다. 이 옵션을 비활성화하거나 현재 페이지가 작가의 홈 페이지일 경우, 해당 작가의 모든 이미지를 로드합니다. <br>' +
+    '참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
+    'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>' +
+    'Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.'
+  ],
   pixivRecordReading: [
     'Pixiv Record Reading',
-    'Pixiv记录阅读位置',
+    'Pixiv 记录阅读位置',
     'Pixiv 기록읽기',
     'Pixiv Lectura de registros'
   ],
@@ -336,7 +346,7 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
   ],
   pixivAscendWorks: [
     'Pixiv Ascending Works',
-    'Pixiv升序排列作品',
+    'Pixiv 升序排列作品',
     'Pixiv 오름차순 작품',
     'Obras Ascendentes Pixiv'
   ],
@@ -346,15 +356,17 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     '아티스트의 작품을 오름차순으로 정렬합니다. 오래된 것부터 최신 순으로. (need refresh)',
     'Ordena las obras del artista en orden ascendente, de las más antiguas a las más recientes. (need refresh)'
   ],
-  pixivJustCurrPageTooltip: [
-    "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>" +
-    'Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.',
-    '在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>' +
-    '注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。',
-    'Pixiv에서 현재 페이지가 작품 페이지일 경우, 해당 페이지의 이미지들만 로드합니다. 이 옵션을 비활성화하거나 현재 페이지가 작가의 홈 페이지일 경우, 해당 작가의 모든 이미지를 로드합니다. <br>' +
-    '참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
-    'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>' +
-    'Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.'
+  pixivImageServer: [
+    'Pixiv Img Server',
+    'Pixiv 图片服务器',
+    'Pixiv 이미지 서버',
+    'Pixiv Img Server',
+  ],
+  pixivImageServerTooltip: [
+    'Replace Pixiv’s default image server i.pximg.net with the proxy server you specify, such as i.pixiv.re, to achieve better loading speeds',
+    '将Pixiv默认的图片服务器 i.pximg.net 替换为你所指定的代理服务器，如： i.pixiv.re，以获得更佳的加载速度。',
+    'Pixiv의 기본 이미지 서버 i.pximg.net을(를) 지정한 프록시 서버(예: i.pixiv.re)로 교체하여 더 빠른 로딩 속도를 얻으세요.',
+    'Reemplaza el servidor de imágenes predeterminado de Pixiv, i.pximg.net, por el servidor proxy que especifiques, como i.pixiv.re, para obtener una velocidad de carga mejor.',
   ],
   // config panel select option
   readMode: [

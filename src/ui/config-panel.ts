@@ -1,4 +1,4 @@
-import { ConfigBooleanType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, defaultConf, resetConf } from "../config";
+import { ConfigBooleanType, ConfigTextType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, defaultConf, resetConf } from "../config";
 import { ADAPTER } from "../platform/adapt";
 import { I18nValue, i18n } from "../utils/i18n";
 import q from "../utils/query-element";
@@ -83,6 +83,9 @@ export class ConfigPanel {
         case "select":
           q(`#${item.key}Select`, this.panel).addEventListener("change", () => events.modSelectConfigEvent(item.key as ConfigSelectType));
           break;
+        case "input":
+          q(`#${item.key}TextInput`, this.panel).addEventListener("change", () => events.modTextConfigEvent(item.key as ConfigTextType));
+          break;
       }
     });
     // tooltip hovering
@@ -158,6 +161,10 @@ function createOption(item: ConfigItem) {
       const optionsStr = item.options.map(o => `<option value="${o.value}" ${conf[item.key as ConfigSelectType] == o.value ? "selected" : ""}>${o.display}</option>`).join("");
       input = `<select id="${item.key}Select">${optionsStr}</select>`;
       break;
+    case "input":
+      input = `<span><input id="${item.key}TextInput" ${conf[item.key as ConfigTextType] ? "value=" + conf[item.key] : ""} class="text-input" placeholder="${item.placeholder ?? ""}" type="text" /></span>`
+      break;
+
   }
   const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
   return `<div class="config-panel-item" style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? " ?:" : " :"}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span></span>${input}</label></div>`;

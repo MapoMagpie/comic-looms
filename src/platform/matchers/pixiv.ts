@@ -372,7 +372,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           title = title.replace(/\.\w+$/, ".gif");
         }
         j++;
-        const node = new ImageNode(p.urls.small, `${window.location.origin}/artworks/${pid}`, title, undefined, p.urls.original, { w: p.width, h: p.height });
+        let thumbnail = p.urls.small;
+        let original = p.urls.original;
+        let server = ADAPTER.conf.pixivImageServer;
+        if (server) {
+          if (!server.startsWith("http")) {
+            server = "https://" + server;
+          }
+          if (!server.endsWith("/")) {
+            server = server + "/";
+          }
+          thumbnail = thumbnail.replace(/https?:\/\/[\.\w]*\//, server);
+          original = original.replace(/https?:\/\/[\.\w]*\//, server);
+        }
+        const node = new ImageNode(thumbnail, `${window.location.origin}/artworks/${pid}`, title, undefined, original, { w: p.width, h: p.height });
         node.actions.push(actionLike);
         node.actions.push(actionBookmark);
         list.push(node);

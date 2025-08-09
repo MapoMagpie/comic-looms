@@ -47,6 +47,10 @@ export function styleCSS() {
   width: 3em;
   height: 1.5em;
 }
+.config-panel-item input.text-input {
+  width: 10em;
+  cursor: auto;
+}
 .ehvp-root-collapse {
   height: 0;
 }
