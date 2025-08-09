@@ -372,20 +372,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           title = title.replace(/\.\w+$/, ".gif");
         }
         j++;
-        let thumbnail = p.urls.small;
-        let original = p.urls.original;
-        let server = ADAPTER.conf.pixivImageServer;
-        if (server) {
-          if (!server.startsWith("http")) {
-            server = "https://" + server;
-          }
-          if (!server.endsWith("/")) {
-            server = server + "/";
-          }
-          thumbnail = thumbnail.replace(/https?:\/\/[\.\w]*\//, server);
-          original = original.replace(/https?:\/\/[\.\w]*\//, server);
-        }
-        const node = new ImageNode(thumbnail, `${window.location.origin}/artworks/${pid}`, title, undefined, original, { w: p.width, h: p.height });
+        const node = new ImageNode(
+          this.changeImageServer(p.urls.small),
+          `${window.location.origin}/artworks/${pid}`,
+          title,
+          undefined,
+          this.changeImageServer(p.urls.original),
+          { w: p.width, h: p.height }
+        );
         node.actions.push(actionLike);
         node.actions.push(actionBookmark);
         list.push(node);
@@ -393,6 +387,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     return list;
   }
+
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     const matches = node.originSrc!.match(PID_EXTRACT);
@@ -403,11 +398,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const p = matches[2];
     if (this.works[pid]?.illustType === 2 || p === "ugoira") {
       const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeta;
-      this.ugoiraMetas[meta.body.src] = meta;
-      return { url: meta.body.src }
+      const original = this.changeImageServer(meta.body.src);
+      this.ugoiraMetas[original] = meta;
+      return { url: original };
     } else {
       return { url: node.originSrc! };
     }
+  }
+
+  changeImageServer(url: string): string {
+    let server = ADAPTER.conf.pixivImageServer;
+    if (server) {
+      if (!server.startsWith("http")) {
+        server = "https://" + server;
+      }
+      if (!server.endsWith("/")) {
+        server = server + "/";
+      }
+      return url.replace(/https?:\/\/[\.\w]*\//, server);
+    }
+    return url;
   }
 }
 
