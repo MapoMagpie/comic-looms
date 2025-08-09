@@ -23,15 +23,6 @@
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
 // @downloadURL        https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js
 // @updateURL          https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.meta.js
-// @match              https://*.pixiv.net/*
-// @match              https://steamcommunity.com/*
-// @match              https://twitter.com/*
-// @match              https://x.com/*
-// @match              https://*.instagram.com/*
-// @match              https://*.manhuagui.com/*
-// @match              https://*.mangacopy.com/*
-// @match              https://*.copymanga.tv/*
-// @match              https://*.artstation.com/*
 // @match              *://*/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.57/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
