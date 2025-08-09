@@ -1,0 +1,41 @@
+name: Build Comic Looms
+
+on:
+  push:
+    branches:
+      - main
+      - master  # 如果主分支是 master，可以保留这一行
+  workflow_dispatch: # 支持手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. 构建项目
+      - name: Build project
+        run: npm run build
+
+      # 5. 保存构建产物到 workflow artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: comic-looms-dist
+          path: |
+            dist/comic-looms.user.js
+            dist/comic-looms.meta.js
