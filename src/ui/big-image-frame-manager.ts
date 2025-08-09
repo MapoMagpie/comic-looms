@@ -293,6 +293,7 @@ export class BigImageFrameManager {
         // } else if (this.checkOverflow() && !this.tryPreventStep()) {
         //   this.stepNext(this.oriented);
         // }
+        this.callbackOnWheel?.();
         this.stepNext(this.oriented);
         if (ADAPTER.conf.readMode === "pagination") {
           this.root.style.overflow = "";

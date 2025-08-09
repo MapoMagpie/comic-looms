@@ -177,7 +177,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     EBUS.emit("toggle-main-view", stage === "open")
   });
 
-  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent!) - 1));
+  HTML.currPageElement.addEventListener("wheel", (event) => {
+    BIFM.callbackOnWheel?.();
+    BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent!) - 1)
+  });
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
@@ -201,10 +204,12 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   // Side Navigation Buttons
   HTML.imgLandLeft.addEventListener("click", (event) => {
+    BIFM.callbackOnWheel?.();
     BIFM.stepNext(ADAPTER.conf.reversePages ? "next" : "prev");
     event.stopPropagation();
   });
   HTML.imgLandRight.addEventListener("click", (event) => {
+    BIFM.callbackOnWheel?.();
     BIFM.stepNext(ADAPTER.conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
@@ -241,8 +246,14 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     }
   });
 
-  q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(ADAPTER.conf.reversePages ? "next" : "prev", ADAPTER.conf.reversePages ? -1 : 1));
-  q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(ADAPTER.conf.reversePages ? "prev" : "next", ADAPTER.conf.reversePages ? 1 : -1));
+  q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => {
+    BIFM.callbackOnWheel?.();
+    BIFM.stepNext(ADAPTER.conf.reversePages ? "next" : "prev", ADAPTER.conf.reversePages ? -1 : 1);
+  });
+  q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => {
+    BIFM.callbackOnWheel?.();
+    BIFM.stepNext(ADAPTER.conf.reversePages ? "prev" : "next", ADAPTER.conf.reversePages ? 1 : -1);
+  });
   q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus", undefined, ADAPTER.matcher!.name));
   q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add", undefined, ADAPTER.matcher!.name));
   q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus", undefined, ADAPTER.matcher!.name));
