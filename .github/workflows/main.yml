@@ -31,11 +31,17 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # 5. 保存构建产物到 workflow artifacts
-      - name: Upload build artifacts
+      # 5. 上传构建产物（分别上传，保持原始 .js 文件）
+      - name: Upload comic-looms.user.js
         uses: actions/upload-artifact@v4
         with:
-          name: comic-looms-dist
-          path: |
-            dist/comic-looms.user.js
-            dist/comic-looms.meta.js
+          name: comic-looms.user.js
+          path: dist/comic-looms.user.js
+          if-no-files-found: error
+
+      - name: Upload comic-looms.meta.js
+        uses: actions/upload-artifact@v4
+        with:
+          name: comic-looms.meta.js
+          path: dist/comic-looms.meta.js
+          if-no-files-found: error
