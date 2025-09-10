@@ -12,7 +12,7 @@
     "@types/file-saver": "^2.0.7",
     "@types/pica": "^9.0.5",
     "typescript": "^5.7.3",
-    "vite": "^6.3.4",
+    "vite": "^6.3.6",
     "vite-plugin-monkey": "^5.0.7"
   },
   "dependencies": {
