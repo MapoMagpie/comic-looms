@@ -61,10 +61,10 @@ export function createActionCustomPanel(root: HTMLElement, onclose?: () => void)
       </div>
       <div><span style="font-size:1.6em;color:#888;">${i18n.function.get()} ${i18n.parameters.get()}</span></div>
       <div>
-        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/img-fetcher.ts#L30">imf</a>
-        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/img-node.ts#L47">imn</a>
+        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/comic-looms/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/img-fetcher.ts#L30">imf</a>
+        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/comic-looms/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/img-node.ts#L47">imn</a>
         <a class="ehvp-custom-btn-green" target="_blank" href="https://www.tampermonkey.net/documentation.php?locale=en#api:GM_xmlhttpRequest">gm_xhr</a>
-        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/event-bus.ts#L8">EBUS</a>
+        <a class="ehvp-custom-btn-green" target="_blank" href="https://github.com/MapoMagpie/comic-looms/blob/9ec4f7970983501ca3c5d8165c455a2654b52bf6/src/event-bus.ts#L8">EBUS</a>
       </div>
       <div><span style="font-size:1.6em;color:#888;">${i18n.function.get()} ${i18n.body.get()}</span></div>
       <textarea id="ehvp-action-input-funcbody" style="min-width: 60vw; height: 50vh;border:none;background-color:#00000090;color:#97ff97;text-align:left;vertical-align:top;font-size:1.2em;font-weight:600;"></textarea>

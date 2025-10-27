@@ -123,7 +123,7 @@ export class ConfigPanel {
          <a id="show-style-custom-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.showStyleCustom.get()}</a>
          <a id="show-action-custom-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.showActionCustom.get()}</a>
          <a id="reset-config-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.resetConfig.get()}</a>
-         <a class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
+         <a class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/comic-looms" target="_blank">${i18n.letUsStar.get()}</a>
     </div>
 </div>`;
   }

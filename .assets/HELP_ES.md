@@ -95,10 +95,10 @@ Hay un botón de **Perfiles de Sitio** en la parte inferior del panel de configu
 
 ## [¿Cómo apoyar al autor?]
 
-Déjame una estrella en [Github](https://github.com/MapoMagpie/eh-view-enhance) o una buena reseña en [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance).
+Déjame una estrella en [Github](https://github.com/MapoMagpie/comic-looms) o una buena reseña en [Greasyfork](https://greasyfork.org/scripts/397848-comic-looms).
 
 Por favor, no dejes reseñas en Greasyfork, ya que su sistema de notificaciones no puede rastrear comentarios posteriores. Muchas personas dejan un problema y nunca vuelven.
-Reporta problemas aquí: [issue](https://github.com/MapoMagpie/eh-view-enhance/issues)
+Reporta problemas aquí: [issue](https://github.com/MapoMagpie/comic-looms/issues)
 
 ## [¿Cómo reabrir la guía?]
 

@@ -109,10 +109,10 @@
 
 ## [如何Feed作者。]
 
-给我[Github](https://github.com/MapoMagpie/eh-view-enhance)星星，或者[Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance)上好评。
+给我[Github](https://github.com/MapoMagpie/comic-looms)星星，或者[Greasyfork](https://greasyfork.org/scripts/397848-comic-looms)上好评。
 
 请勿在Greasyfork上反馈问题，因为该站点的通知系统无法跟踪后续的反馈。很多人只是留下一个问题，再也没有回来过。
-请在此反馈问题: [issue](https://github.com/MapoMagpie/eh-view-enhance/issues)
+请在此反馈问题: [issue](https://github.com/MapoMagpie/comic-looms/issues)
 
 
 ## [如何再次打开指南？]

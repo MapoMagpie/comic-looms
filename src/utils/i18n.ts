@@ -858,9 +858,9 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 <p>Yes! There&#39;s a <strong>Keyboard</strong> button at the bottom of the configuration panel. Click it to view or configure keyboard operations.</p>
 <p>You can even configure it for one-handed full keyboard operation, freeing up your other hand!</p>
 <h2>[How to Feed the Author]</h2>
-<p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
+<p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/comic-looms">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-comic-looms">Greasyfork</a>.</p>
 <p>Please do not review on Greasyfork, as its notification system cannot track subsequent feedback. Many people leave an issue and never back.
-Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
+Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/comic-looms/issues">issue</a></p>
 <h2>[How to Reopen the Guide?]</h2>
 <p>Click the <strong>Help</strong> button at the bottom of the configuration panel.</p>
 `,
@@ -937,9 +937,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>可以！在配置面板的下方，有一个<strong>快捷键</strong>按钮，点击后可以查看键盘操作，或进行配置。</p>
 <p>甚至可以配置为单手全键盘操作，解放另一只手！</p>
 <h2>[如何Feed作者。]</h2>
-<p>给我<a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>上好评。</p>
+<p>给我<a target="_blank" href="https://github.com/MapoMagpie/comic-looms">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-comic-looms">Greasyfork</a>上好评。</p>
 <p>请勿在Greasyfork上反馈问题，因为该站点的通知系统无法跟踪后续的反馈。很多人只是留下一个问题，再也没有回来过。
-请在此反馈问题: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
+请在此反馈问题: <a target="_blank" href="https://github.com/MapoMagpie/comic-looms/issues">issue</a></p>
 <h2>[如何再次打开指南？]</h2>
 <p>在配置面板的下方，点击<strong>帮助</strong>按钮。</p>
 `,
@@ -1017,8 +1017,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>사이트를 다시 활성화하려면 제외되지 않은 사이트에서 설정해야 합니다.</p>
 
 <h2>[개발자에게 도움을 주고 싶다면?]</h2>
-<p><a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>에 별을 주시거나, <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>에서 좋은 리뷰를 남겨주세요.</p>
-<p>단, Greasyfork에 버그 제보 내용의 리뷰를 남기지 마세요. 해당 플랫폼의 알림 시스템이 후속 피드백을 추적할 수 없습니다. 많은 사람들이 문제를 제기하고 다시 돌아오지 않습니다.<br> 문제는 여기에 보고해 주세요: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">이슈</a></p>
+<p><a target="_blank" href="https://github.com/MapoMagpie/comic-looms">Github</a>에 별을 주시거나, <a target="_blank" href="https://greasyfork.org/scripts/397848-comic-looms">Greasyfork</a>에서 좋은 리뷰를 남겨주세요.</p>
+<p>단, Greasyfork에 버그 제보 내용의 리뷰를 남기지 마세요. 해당 플랫폼의 알림 시스템이 후속 피드백을 추적할 수 없습니다. 많은 사람들이 문제를 제기하고 다시 돌아오지 않습니다.<br> 문제는 여기에 보고해 주세요: <a target="_blank" href="https://github.com/MapoMagpie/comic-looms/issues">이슈</a></p>
 
 <h2>[가이드를 다시 열려면?]</h2>
 <p>설정 패널 하단에 있는 <strong>도움말</strong> 버튼을 클릭하세요.</p>
@@ -1100,9 +1100,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>¡Sí! Hay un botón del <strong>Teclado</strong> en la parte inferior del panel de configuración. Haz clic en él para ver o configurar las operaciones del teclado.</p>
 <p>¡Incluso puedes configurarlo para operar con una sola mano, liberando así tu otra mano!</p>
 <h2>[¿Cómo apoyar al autor?]</h2>
-<p>Déjame una estrella en <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance'>Github</a> o una buena reseña en <a target='_blank' href='https://greasyfork.org/scripts/397848-e-hentai-view-enhance'>Greasyfork</a>.</p>
+<p>Déjame una estrella en <a target='_blank' href='https://github.com/MapoMagpie/comic-looms'>Github</a> o una buena reseña en <a target='_blank' href='https://greasyfork.org/scripts/397848-comic-looms'>Greasyfork</a>.</p>
 <p>Por favor, no dejes reseñas en Greasyfork, ya que su sistema de notificaciones no puede rastrear comentarios posteriores. Muchas personas dejan un problema y nunca vuelven.
-Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance/issues'>issue</a></p>
+Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/comic-looms/issues'>issue</a></p>
 <h2>[¿Cómo reabrir la guía?]</h2>
 <p>Haz clic en el botón de <strong>Ayuda</strong> en la parte inferior del panel de configuración.</p>
 `,

@@ -31,7 +31,7 @@
 1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
 1. **`前置条件`**：安装脚本管理器拓展 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
 1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
-1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848)
+1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848-comic-looms)
 1. **`安装地址2`**：直接访问此处进行安装[这里](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
 ## <a name="multi-site-support">多站点支持</a>
@@ -87,6 +87,6 @@
 
 如果你想尝试为某个站点添加支持，可以参考[这里](./CONTRIBUTING.md)
 
-如果你遇到了某些问题，请反馈至此，请务必描述你的使用环境: https://github.com/MapoMagpie/eh-view-enhance/issues
+如果你遇到了某些问题，请反馈至此，请务必描述你的使用环境: https://github.com/MapoMagpie/comic-looms/issues
 
 如果你喜欢这个脚本，请给我一个 `star`

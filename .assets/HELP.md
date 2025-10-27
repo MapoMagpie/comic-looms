@@ -110,10 +110,10 @@ There's a **Site Profiles** button at the bottom of the configuration panel. Cli
 
 ## [How to Feed the Author]
 
-Give me a star on [Github](https://github.com/MapoMagpie/eh-view-enhance) or a good review on [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance).
+Give me a star on [Github](https://github.com/MapoMagpie/comic-looms) or a good review on [Greasyfork](https://greasyfork.org/scripts/397848-comic-looms).
 
 Please do not review on Greasyfork, as its notification system cannot track subsequent feedback. Many people leave an issue and never back.
-Report issues here: [issue](https://github.com/MapoMagpie/eh-view-enhance/issues)
+Report issues here: [issue](https://github.com/MapoMagpie/comic-looms/issues)
 
 ## [How to Reopen the Guide?]
 

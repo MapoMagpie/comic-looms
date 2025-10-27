@@ -95,10 +95,10 @@ CONF > Style에서 다음을 수정하거나 추가하세요: .ehvp-root { --ehv
 
 ## [개발자에게 도움을 주고 싶다면?]
 
-[Github](https://github.com/MapoMagpie/eh-view-enhance)에 별을 주시거나, [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance)에서 좋은 리뷰를 남겨주세요.
+[Github](https://github.com/MapoMagpie/comic-looms)에 별을 주시거나, [Greasyfork](https://greasyfork.org/scripts/397848-comic-looms)에서 좋은 리뷰를 남겨주세요.
 
 단, Greasyfork에 버그 제보 내용의 리뷰를 남기지 마세요. 해당 플랫폼의 알림 시스템이 후속 피드백을 추적할 수 없습니다. 많은 사람들이 문제를 제기하고 다시 돌아오지 않습니다.
-문제는 여기에 보고해 주세요: [이슈](https://github.com/MapoMagpie/eh-view-enhance/issues)
+문제는 여기에 보고해 주세요: [이슈](https://github.com/MapoMagpie/comic-looms/issues)
 
 ## [가이드를 다시 열려면?]
 

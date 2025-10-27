@@ -31,7 +31,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
 1. **`Prerequisites`**: Installed extension [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/) 
 1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
-1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848)
+1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-comic-looms)
 1. **`Installation Link 2`**: Direct install [here](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
 ## <a name="multi-site-support">Multi-site Support</a>
@@ -87,6 +87,6 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 
 If you want to add support for certain sites, please refer to [this guide](./.assets/CONTRIBUTING.md)
 
-If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/eh-view-enhance/issues
+If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/comic-looms/issues
 
 If you like this script, please give it a `star`.
