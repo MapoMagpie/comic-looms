@@ -50,7 +50,7 @@ class MangaCopyMatcher extends BaseMatcher<string> {
     const thumbimg = document.querySelector<HTMLImageElement>(".comicParticulars-left-img > img[data-src]")?.getAttribute("data-src") || undefined;
     const pathWord = window.location.href.match(PATH_WORD_REGEX)?.[1];
     if (!pathWord) throw new Error("cannot match comic id");
-    const comicInfoURL = `https://www.mangacopy.com/comicdetail/${pathWord}/chapters`;
+    const comicInfoURL = `/comicdetail/${pathWord}/chapters`;
     const comicInfo = await window.fetch(comicInfoURL, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
