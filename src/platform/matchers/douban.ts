@@ -71,10 +71,10 @@ class DoubanMatcher extends BaseMatcher<Document> {
     this.initGalleryMeta();
     const thumbimg = document.querySelector<HTMLImageElement>("#db-usr-profile > div.pic > a > img")?.getAttribute("src") || undefined;
     let chapterCount = 0;
-    const chapters: Chapter[] = [];
     for await (const album_page of this.pages_of_albums(document, window.location.href)) {
       let albums: DoubanAlbum [] = await this.albums_in_page(album_page)
       for (const album of albums) {
+	const chapters: Chapter[] = [];
 	chapterCount += 1;
 	chapters.push(new Chapter(
 	  chapterCount,
@@ -82,10 +82,11 @@ class DoubanMatcher extends BaseMatcher<Document> {
 	  album["path"],
 	  thumbimg,
 	))
+	this.chapterCount = chapterCount;
+	yield chapters;
       }
     }
-    this.chapterCount = chapterCount;
-    return chapters;
+
   }
 
   async *fetchPagesSource(ch: Chapter): AsyncGenerator<Result<Document>> {
