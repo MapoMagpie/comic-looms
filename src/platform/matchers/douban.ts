@@ -44,8 +44,8 @@ class DoubanMatcher extends BaseMatcher<Document> {
     }
     if (next_page) {
       const d = await fetch(next_page)
-	.then(resp => resp.text())
-	.then(text => DP.parseFromString(text, 'text/html'))
+        .then(resp => resp.text())
+        .then(text => DP.parseFromString(text, 'text/html'))
 
       yield* this.pages_of_albums(d, next_page, page_number)
     }
@@ -59,10 +59,10 @@ class DoubanMatcher extends BaseMatcher<Document> {
     return Array.from(d.querySelectorAll('.albumlst')).map((x) => {
       let t = x.querySelector<HTMLElement>('.albumlst_r .pl')!.innerText.match(/(\d+)张照片\s+(.+)(创建|更新)/)
       return {
-	"title": (x.querySelector<HTMLElement>('.albumlst_r .pl2 a')?.innerText??document.title).trim(),
-	"path": x.querySelector<HTMLElement>('.album_photo')!.getAttribute('href')!,
-	"photo_count": +(t![1]),
-	"date": t![2],
+        "title": (x.querySelector<HTMLElement>('.albumlst_r .pl2 a')?.innerText??document.title).trim(),
+        "path": x.querySelector<HTMLElement>('.album_photo')!.getAttribute('href')!,
+        "photo_count": +(t![1]),
+        "date": t![2],
       }
     })
   }
@@ -74,16 +74,16 @@ class DoubanMatcher extends BaseMatcher<Document> {
     for await (const album_page of this.pages_of_albums(document, window.location.href)) {
       let albums: DoubanAlbum [] = await this.albums_in_page(album_page)
       for (const album of albums) {
-	const chapters: Chapter[] = [];
-	chapterCount += 1;
-	chapters.push(new Chapter(
-	  chapterCount,
-	  album["title"],
-	  album["path"],
-	  thumbimg,
-	))
-	this.chapterCount = chapterCount;
-	yield chapters;
+        const chapters: Chapter[] = [];
+        chapterCount += 1;
+        chapters.push(new Chapter(
+          chapterCount,
+          album["title"],
+          album["path"],
+          thumbimg,
+        ))
+        this.chapterCount = chapterCount;
+        yield chapters;
       }
     }
   }
@@ -93,13 +93,13 @@ class DoubanMatcher extends BaseMatcher<Document> {
 
     while (next_page) {
       let doc = await fetch(next_page)
-	.then(resp => resp.text())
-	.then(text => DP.parseFromString(text, 'text/html'))
+        .then(resp => resp.text())
+        .then(text => DP.parseFromString(text, 'text/html'))
 
       yield Result.ok(doc)
 
       next_page = doc.querySelector<HTMLAnchorElement>(
-	'#content  div.article  div.paginator span.next > a',
+        '#content  div.article  div.paginator span.next > a',
       )?.href ?? ""
     }
   }
@@ -107,22 +107,22 @@ class DoubanMatcher extends BaseMatcher<Document> {
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     return Array.from(doc.querySelectorAll<HTMLImageElement>('.photo_wrap img')).map(
       img => {
-	// https://img3.doubanio.com/view/photo/m/public/p999999.webp
-	// https://img3.doubanio.com/view/photo/l/public/p999999.webp
-	// https://img1.doubanio.com/view/photo/sqs/public/p999999.jpg
+        // https://img3.doubanio.com/view/photo/m/public/p999999.webp
+        // https://img3.doubanio.com/view/photo/l/public/p999999.webp
+        // https://img1.doubanio.com/view/photo/sqs/public/p999999.jpg
 
-	const orig_src = img.src.replace(
-	  /(.*\/view\/photo)(.+)(public\/.*)\.(.+)/,
-	  "$1/l/$3.webp",
-	)
-	const title = (img.alt? img.alt + "_" : "") + orig_src.replace( /.*\/(.+)/, "$1")
-	return new ImageNode(
-	  img.src,
-	  (img.parentNode! as HTMLAnchorElement).href,
-	  title,
-	  undefined,
-	  orig_src,
-	)
+        const orig_src = img.src.replace(
+          /(.*\/view\/photo)(.+)(public\/.*)\.(.+)/,
+          "$1/l/$3.webp",
+        )
+        const title = (img.alt? img.alt + "_" : "") + orig_src.replace( /.*\/(.+)/, "$1")
+        return new ImageNode(
+          img.src,
+          (img.parentNode! as HTMLAnchorElement).href,
+          title,
+          undefined,
+          orig_src,
+        )
       })
   }
 
