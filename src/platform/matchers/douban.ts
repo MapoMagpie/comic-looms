@@ -86,7 +86,6 @@ class DoubanMatcher extends BaseMatcher<Document> {
 	yield chapters;
       }
     }
-
   }
 
   async *fetchPagesSource(ch: Chapter): AsyncGenerator<Result<Document>> {
