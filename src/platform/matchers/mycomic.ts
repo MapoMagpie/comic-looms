@@ -93,7 +93,7 @@ class MyComicMatcher extends BaseMatcher<Document> {
 ADAPTER.addSetup({
   name: "My Comic",
   workURLs: [
-    /mycomic.com\/(\w+\/)?comics\/\d+$/
+    /mycomic.com\/(\w+\/)?comics\/\d+(#.*)?$/
   ],
   match: ["https://mycomic.com/*"],
   constructor: () => new MyComicMatcher(),
