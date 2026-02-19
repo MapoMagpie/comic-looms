@@ -229,7 +229,7 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
   constructor() {
     super();
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
-    if (/pixiv.net(\/en\/)?$/.test(window.location.href)) {
+    if (/pixiv.net(\/en\/?|\/illustration)?$/.test(window.location.href)) {
       this.api = new PixivHomeAPI();
     } else {
       this.api = new PixivArtistWorksAPI();
@@ -430,7 +430,7 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
 ADAPTER.addSetup({
   name: "Pixiv",
   workURLs: [
-    /pixiv.net\/(en\/)?(artworks\/.*|users\/.*|$)/
+    /pixiv.net\/(\w*\/|illustration)?(artworks\/.*|users\/.*|$)/
   ],
   match: ["https://www.pixiv.net/*"],
   constructor: () => {
