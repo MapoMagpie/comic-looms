@@ -128,7 +128,7 @@ type GalleryImage = {
 ADAPTER.addSetup({
   name: "绅士漫画",
   workURLs: [
-    /(wnacg.com|wn\d{2}.cc)\/photos-index/
+    /(wnacg.com|wn\d{2}.(cc|ru))\/photos-index/
   ],
   match: ["https://www.wnacg.com/*"],
   constructor: () => new WnacgMatcher(),
