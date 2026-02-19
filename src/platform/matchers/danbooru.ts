@@ -1,6 +1,7 @@
 import { transient } from "../../config";
 import { GalleryMeta } from "../../download/gallery-meta";
-import ImageNode from "../../img-node";
+import EBUS from "../../event-bus";
+import ImageNode, { NodeAction } from "../../img-node";
 import { evLog } from "../../utils/ev-log";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
@@ -171,7 +172,20 @@ class Rule34Matcher extends DanbooruMatcher {
       evLog("error", "warn: cannot find href", ele);
       return [null, ""];
     }
-    return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+    const node = new ImageNode(img.src, href, `${ele.id}.jpg`);
+    const id = href.match(/id=(\d+)/)?.[1];
+    if (id) {
+      const addFav = new NodeAction("♥", "Add to favorites", async () => {
+        fetch(`${window.location.origin}/index.php?page=post&s=vote&id=${id}&type=up`);
+        const resp = await fetch(`${window.location.origin}/public/addfav.php?id=${id}`).then(resp => resp.text());
+        if (resp === "2") {
+          EBUS.emit("notify-message", "error", "You are not logged in");
+          throw new Error("You are not logged in");
+        }
+      });
+      node.actions.push(addFav);
+    }
+    return [node, img.getAttribute("alt") || ""];
   }
   getOriginalURL(doc: Document): string | null {
     // image = {'domain':'https://wimg.rule34.xxx/', 'width':1700, 'height':2300,'dir':3347, 'img':'xxx.jpeg', 'base_dir':'images', 'sample_dir':'samples', 'sample_width':'850', 'sample_height':'1150'};	
@@ -222,6 +236,18 @@ class GelBooruMatcher extends DanbooruMatcher {
       return [null, ""];
     }
     const node = new ImageNode(img.src, href, `${ele.id}.jpg`);
+    const id = href.match(/id=(\d+)/)?.[1];
+    if (id) {
+      const addFav = new NodeAction("♥", "Add to favorites", async () => {
+        fetch(`${window.location.origin}/index.php?page=post&s=vote&id=${id}&type=up`);
+        let resp = await fetch(`${window.location.origin}/public/addfav.php?id=${id}`).then(resp => resp.text());
+        if (resp === "2") {
+          EBUS.emit("notify-message", "error", "You are not logged in");
+          throw new Error("You are not logged in");
+        }
+      });
+      node.actions.push(addFav);
+    }
     const tags = img.title.split(" ").map(t => t.trim()).filter(t => (t) && !(t.startsWith("score") || t.startsWith("rating"))).map(t => "tag:" + t);
     node.setTags(...tags);
     return [node, img.getAttribute("alt") || ""];
