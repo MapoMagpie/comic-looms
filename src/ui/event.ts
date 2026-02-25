@@ -87,7 +87,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         timeout: [2, 40],
         autoPageSpeed: [1, 100],
         preventScrollPageTime: [-1, 90000],
-        paginationIMGCount: [1, 3],
+        paginationIMGCount: [1, 10],
         scrollingDelta: [1, 5000],
         scrollingSpeed: [1, 100],
       };
