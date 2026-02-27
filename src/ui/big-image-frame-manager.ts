@@ -581,40 +581,51 @@ export class BigImageFrameManager {
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
       return;
     }
-    const [o, negative]: [Oriented, Oriented] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
-    this.oriented = o;
+    const withShift = originEvent instanceof WheelEvent && originEvent.shiftKey;
+    const smartScrolling = !withShift && ADAPTER.conf.smartScrolling;
     switch (ADAPTER.conf.readMode) {
       case "pagination": {
         const over = this.checkOverflow();
-        const [$ori, $neg] = ADAPTER.conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
+
+        let deltaY = event.deltaY;
+        if (withShift && ADAPTER.conf.reversePages) deltaY = deltaY * -1;
+        const [o, neg_o]: [Oriented, Oriented] = deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+        this.oriented = o;
+        const [$ori, $neg] = ADAPTER.conf.reversePages ? [neg_o, o] : [o, neg_o];
+
         const rotated = this.root.classList.contains("bifm-rotate-90") || this.root.classList.contains("bifm-rotate-270");
         if (rotated) {
           this.stepNext(this.oriented);
           break;
         }
-        if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
+
+        if (over[o].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
           preventDefault();
           if (!noPrevent) {
-            if (over[$neg].overX > 0 || over[negative].overY > 0) {
+            if (over[neg_o].overY > 0 || over[$neg].overX > 0) {
               if (this.tryPreventStep()) break;
             }
           }
-          this.stepNext(this.oriented);
+          this.stepNext(o);
           break;
         }
-        let fix = this.oriented === "next" ? 1 : -1;
-        if (customScrolling && over[this.oriented].overY > 0) {
-          this.scrollerY.scroll(Math.min(over[this.oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+        let fix = o === "next" ? 1 : -1;
+        if (customScrolling && over[o].overY > 0) {
+          this.scrollerY.scroll(Math.min(over[o].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
-        fix = fix * (ADAPTER.conf.reversePages ? -1 : 1);
-        if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
-          this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+        if (customScrolling || smartScrolling) {
+          fix = fix * (ADAPTER.conf.reversePages ? -1 : 1);
+          if (over[o].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
+            this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+          }
         }
         break;
       }
       case "horizontal": {
-        preventDefault();
-        this.scrollerX.scroll(event.deltaY * (ADAPTER.conf.reversePages ? -1 : 1), ADAPTER.conf.scrollingSpeed);
+        if (customScrolling || smartScrolling) {
+          preventDefault();
+          this.scrollerX.scroll(event.deltaY * (ADAPTER.conf.reversePages ? -1 : 1), ADAPTER.conf.scrollingSpeed);
+        }
         break;
       }
       case "continuous": {

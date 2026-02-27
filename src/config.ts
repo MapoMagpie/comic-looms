@@ -102,6 +102,8 @@ export type Config = {
   scrollingDelta: number,
   /** Custom key scrolling speed */
   scrollingSpeed: number,
+  /** Custom key scrolling enable/disable */
+  smartScrolling: boolean,
   id: string,
   /** modify some config items by patch */
   configPatchVersion: number,
@@ -179,6 +181,7 @@ export function defaultConf(): Config {
     ehentaiMirrorHost: "",
     scrollingDelta: 300,
     scrollingSpeed: 20,
+    smartScrolling: true,
     id: uuid(),
     configPatchVersion: 0,
     displayText: {},
@@ -380,6 +383,7 @@ export type ConfigBooleanType = "fetchOriginal"
   | "hdThumbnails"
   | "dragImageOut"
   | "excludeVideo"
+  | "smartScrolling"
   ;
 export type ConfigSelectType = "readMode"
   | "gridMode"
@@ -430,6 +434,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "dragImageOut", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "smartScrolling", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivRecordReading", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   { key: "pixivAscendWorks", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },

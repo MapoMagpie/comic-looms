@@ -168,6 +168,18 @@ const i18nData = {
     '비기본 스크롤(사용자 정의 키보드 스크롤, 가로 스크롤) 중 각 스크롤의 거리입니다.',
     'Durante el desplazamiento no nativo (desplazamiento con teclado personalizado, desplazamiento horizontal), la distancia de cada desplazamiento.'
   ],
+  smartScrolling: [
+    "Smart Scrolling",
+    "智能滚动",
+    "스마트 스크롤",
+    "Desplazamiento inteligente",
+  ],
+  smartScrollingTooltip: [
+    "When enabled, horizontal scrolling will occur when needed without pressing the shift key. (This is not native scrolling, so the experience may be poor in some cases.)",
+    "启用此项后，会在需要时进行横向滚动，而无需按下shift键。(这不是浏览器原生的滚动，因此在某些情况下体验不佳。)",
+    "이 옵션을 활성화하면 shift 키를 누르지 않고도 필요한 경우 가로 스크롤이 발생합니다. (이는 브라우저의 기본 스크롤이 아니므로, 일부 경우에는 경험이 좋지 않을 수 있습니다.)",
+    "Cuando está habilitado, se producirá un desplazamiento horizontal cuando sea necesario sin presionar la tecla shift. (Esto no es un desplazamiento nativo, por lo que la experiencia puede ser pobre en algunos casos.)",
+  ],
   scrollingSpeed: [
     'Scrolling Speed',
     '滚动速度',
