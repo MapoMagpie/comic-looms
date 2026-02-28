@@ -1,5 +1,6 @@
 import ImageNode, { NodeAction } from "../../img-node";
 import { Chapter } from "../../page-fetcher";
+import { sleep } from "../../utils/sleep";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
@@ -30,8 +31,30 @@ class JandanPagesList implements JandanList {
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
     yield [new Chapter(0, "Default", window.location.href)];
   }
-  fetchPagesSource(): AsyncGenerator<Result<JandanComment[]>> {
-    throw new Error("Method not implemented.");
+  async *fetchPagesSource(): AsyncGenerator<Result<JandanComment[]>> {
+    let post = window.location.href.includes("ooxx") ? "21183" : "26402";
+    let page = parseInt(window.location.href.match(/page=(\d+)/)?.[1] ?? "0");
+    if (isNaN(page)) {
+      page = 0;
+    }
+    let api = new URL(`${window.location.origin}/api/comment/post/${post}?order=desc&page=${page}`)
+    while (page >= 0) {
+      const resp = await window.fetch(api).then(res => res.json()).catch(Error);
+      if (resp instanceof Error) {
+        yield Result.err(resp);
+        sleep(1000);
+        continue;
+      }
+      let data = resp.data as { total_page: number, current_page: number, list: JandanComment[] } | undefined;
+      if (!data) {
+        yield Result.err(new Error("获取此页数据失败:" + page));
+        sleep(1000);
+        continue;
+      }
+      yield Result.ok(data.list);
+      page = data.current_page - 1;
+      api.searchParams.set("page", page.toString());
+    }
   }
 }
 class JandanTopList implements JandanList {
@@ -58,12 +81,18 @@ class JandanTopList implements JandanList {
 
 class JandanMatcher extends BaseMatcher<JandanComment[]> {
   list: JandanList;
+  cdnLine: string = "1";
   constructor() {
     super();
     if (/jandan.net\/top/.test(window.location.href)) {
       this.list = new JandanTopList();
     } else {
       this.list = new JandanPagesList();
+    }
+    const settings_raw = window.localStorage.getItem("jandan:settings");
+    if (settings_raw) {
+      const settings = JSON.parse(settings_raw);
+      this.cdnLine = settings.cdnLine ?? "1";
     }
   }
   fetchChapters(): AsyncGenerator<Chapter[]> {
@@ -80,17 +109,17 @@ class JandanMatcher extends BaseMatcher<JandanComment[]> {
       if (images.length === 0) continue;
       const href = `${window.location.origin}/t/${comment.id}`;
       const ooAction = new NodeAction("oo" + comment.vote_positive, "xxoo", async () => {
-        await fetch("https://jandan.net/api/comment/vote", {
+        await fetch(`${window.location.origin}/api/comment/vote`, {
           "headers": { "Content-Type": "application/json", },
-          "referrer": "https://jandan.net",
+          "referrer": window.location.origin,
           "body": `{"comment_id":${comment.id},"like_type":"pos","data_type":"comment"}`,
           "method": "POST",
         })
       });
       const xxAction = new NodeAction("xx" + comment.vote_negative, "xxoo", async () => {
-        await fetch("https://jandan.net/api/comment/vote", {
+        await fetch(`${window.location.origin}/api/comment/vote`, {
           "headers": { "Content-Type": "application/json", },
-          "referrer": "https://jandan.net",
+          "referrer": window.location.origin,
           "body": `{"comment_id":${comment.id},"like_type":"neg","data_type":"comment"}`,
           "method": "POST",
         })
@@ -114,9 +143,11 @@ class JandanMatcher extends BaseMatcher<JandanComment[]> {
   }
 
   parseURL(src: string): [string, string, string, boolean] {
-    src = src.replace(/img\.wangmoyu\.com/, 'wangmoyuimg.cdn.dfyun.com.cn');
-    src = src.replace(/img\.moyu\.im/, 'moyuimg.cdn.dfyun.com.cn');
-    src = src.replace(/img\.toto\.im/, 'totoimg.cdn.dfyun.com.cn');
+    if (this.cdnLine === "1") {
+      src = src.replace(/img\.wangmoyu\.com/, 'wangmoyuimg.cdn.dfyun.com.cn');
+      src = src.replace(/img\.moyu\.im/, 'moyuimg.cdn.dfyun.com.cn');
+      src = src.replace(/img\.toto\.im/, 'totoimg.cdn.dfyun.com.cn');
+    }
     const isGIF = /gif$/.test(src);
     if (isGIF) {
       const t = src.replace(/(https?:\/\/[^/]+)\/\w+\/(.+?\.gif)/, '$1/thumb180/$2') + '.webp';
@@ -127,8 +158,9 @@ class JandanMatcher extends BaseMatcher<JandanComment[]> {
       if (/\.(jpg|png|jpeg)$/.test(src)) {
         src = src + '.webp';
       }
+      const ext = origin.split(".").pop() ?? "webp";
       // TODO: option enableThumbnail
-      return ["", origin, "webp", false];
+      return [src, origin, ext, false];
     }
   }
 }
@@ -140,7 +172,7 @@ ADAPTER.addSetup({
     "https://i.jandan.net/*"
   ],
   workURLs: [
-    /jandan.net\/(pic|xxoo|top)/
+    /jandan.net\/(pic|ooxx|top)/
   ],
   constructor: () => new JandanMatcher(),
 });
