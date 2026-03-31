@@ -16,49 +16,43 @@ function nhParseExt(str: string): string {
   }
 }
 
+type NHImage = {
+  number: number,
+  path: string,
+  width: number,
+  height: number,
+  thumbnail: string,
+  thumbnail_width: number,
+  thumbnail_height: number,
+};
+
 type NHGalleryInfo = {
   id: number,
-  images: {
-    cover: { t: string, w: number, h: number, }
-    pages: { t: string, w: number, h: number }[],
-    thumbnail: { t: string, w: number, h: number, }
-  },
   media_id: string,
   num_pages: number,
-  tags: { id: number, type: string, name: string, url: string, count: number }[],
-  title: { english: string, japanese?: string },
+  tags: {
+    id: number,
+    type: string,
+    name: string,
+    url: string,
+    count: number
+  }[],
+  title: {
+    english: string,
+    japanese?: string,
+    pretty?: string,
+  },
+  pages: NHImage[],
 }
 
 class NHMatcher extends BaseMatcher<Document> {
   meta?: GalleryMeta;
-  imageCDNUrls?: string[];
+  imageCDNUrls: string[] = ["https://i1.nhentai.net", "https://i2.nhentai.net", "https://i3.nhentai.net", "https://i4.nhentai.net"];
+  thumbCDNUrls: string[] = ["https://t1.nhentai.net", "https://t2.nhentai.net", "https://t3.nhentai.net", "https://t4.nhentai.net"];
   galleryMeta(): GalleryMeta {
     return this.meta!;
   }
-  parseInfo() {
-    let nRaw = "";
-    let gRaw = "";
-    Array.from(document.querySelectorAll("body > script")).forEach(ele => {
-      const textContent = ele.textContent;
-      if (textContent) {
-        if (textContent.trimStart().startsWith("window._n_app")) {
-          nRaw = textContent;
-        }
-        if (textContent.trimStart().startsWith("window._gallery")) {
-          gRaw = textContent;
-        }
-      }
-    });
-    // const csrfToken = nRaw.match(/csrf_token:\s?"(.*?)",/)?.[1];
-    const thumbCDNUrls = nRaw.match(/thumb_cdn_urls:\s?\[(.*?)\],/)?.[1]?.split(",").map(t => t.trim().replaceAll("\"", ""));
-    const imageCDNUrls = nRaw.match(/image_cdn_urls:\s?\[(.*?)\],/)?.[1]?.split(",").map(t => t.trim().replaceAll("\"", ""));
-    if (!thumbCDNUrls || thumbCDNUrls.length === 0) throw new Error("cannot find thumb_cdn_urls from script");
-    if (!imageCDNUrls || imageCDNUrls.length === 0) throw new Error("cannot find image_cdn_urls from script");
-    const jsonRaw = gRaw.match(/parse\((.*)\);/)?.[1];
-    if (!jsonRaw) throw new Error("cannot found images info from window._gallery");
-    const info = JSON.parse(JSON.parse(jsonRaw)) as NHGalleryInfo;
-    if (!info.images) throw new Error("cannot found images from window._gallery");
-    // parse gallery meta
+  createMeta(info: NHGalleryInfo) {
     const meta = new GalleryMeta(window.location.href, info.title?.english || document.title);
     meta.originTitle = info.title?.japanese;
     if (info.tags && info.tags.length > 0) {
@@ -71,7 +65,12 @@ class NHMatcher extends BaseMatcher<Document> {
       }, {});
     }
     this.meta = meta;
-    return { info, thumbCDNUrls, imageCDNUrls };
+  }
+  async getImageServers() {
+    const config = await window.fetch(`${window.origin}/api/v2/config`).then(res => res.json()).catch(Error);
+    if (config instanceof Error) throw config;
+    this.imageCDNUrls = config.image_servers;
+    this.thumbCDNUrls = config.thumb_servers;
   }
   async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
     if (retry) {
@@ -85,24 +84,27 @@ class NHMatcher extends BaseMatcher<Document> {
     }
     return { url: node.originSrc! };
   }
-  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
-    await sleep(200);
-    const nodes = Array.from(doc.querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb"));
-    if (nodes.length == 0) throw new Error("cannot find image nodes")
-    const { info, imageCDNUrls } = this.parseInfo();
-    this.imageCDNUrls = imageCDNUrls;
-    const digits = nodes.length.toString().length;
+  async parseImgNodes(): Promise<ImageNode[]> {
+    await this.getImageServers();
+    const galleryID = window.location.href.match(/g\/(\d+)/)?.[1];
+    if (!galleryID) throw new Error("cannot match gallery id from url");
+    const resp = await window.fetch(`${window.location.origin}/api/v2/galleries/${galleryID}`).then(res => res.json()).catch(Error);
+    if (resp instanceof Error) throw resp;
+    const data = resp as NHGalleryInfo;
+    this.createMeta(data);
+    const digits = data.pages.length.toString().length;
     const ret = [];
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      const thumbSrc = node.querySelector<HTMLImageElement>("img")?.getAttribute("data-src") ?? "";
+    for (let i = 0; i < data.pages.length; i++) {
+      const node = data.pages[i];
       const title = (i + 1).toString().padStart(digits, "0");
-      const ext = nhParseExt(info.images.pages[i].t);
-      const href = location.origin + node.getAttribute("href");
-      const cdn = imageCDNUrls[i % imageCDNUrls.length];
-      const originSrc = `https://${cdn}/galleries/${info.media_id}/${i + 1}.${ext}`;
-      const wh = { w: info.images.pages[i].w, h: info.images.pages[i].h };
-      ret.push(new ImageNode(thumbSrc, href, title + "." + ext, undefined, originSrc, wh));
+      const ext = node.path.split(".").pop() ?? ".guess.webp";
+      const href = `${window.location.origin}/g/${galleryID}/${node.number}/`;
+      const originCDN = this.imageCDNUrls[i % this.imageCDNUrls.length];
+      const originSrc = `${originCDN}/${node.path}`;
+      const thumbCDN = this.thumbCDNUrls[i % this.thumbCDNUrls.length];
+      const thumbnail = `${thumbCDN}/${node.thumbnail}`;
+      const wh = { w: node.thumbnail_width, h: node.thumbnail_height };
+      ret.push(new ImageNode(thumbnail, href, title + "." + ext, undefined, originSrc, wh));
     }
     return ret;
   }
