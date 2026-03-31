@@ -116,7 +116,7 @@ const _classWorkerURL = URL.createObjectURL(new Blob([decodeBase64(encodedJs)], 
           fileName: 'comic-looms.user.js',
           metaFileName: 'comic-looms.meta.js',
           externalGlobals: {
-            "@zip.js/zip.js": cdn.jsdelivr("zip", "dist/zip-full.min.js"),
+            "@zip.js/zip.js": cdn.jsdelivr("zip", "dist/zip.min.js"),
             "file-saver": cdn.jsdelivr("saveAs", "dist/FileSaver.min.js"),
             "pica": cdn.jsdelivr("pica", "dist/pica.min.js"),
           },

@@ -50,7 +50,7 @@ class MiniServeMatcher extends BaseMatcher<string> {
       return isImage(ext) || isVideo(ext);
     }
     ).map(e => {
-      const promise = e.getData!(new zip_js.BlobWriter());
+      const promise = (e as any).getData!(new zip_js.BlobWriter());
       map.set(e.filename, promise);
       const ext = (e.filename.split(".").pop() ?? "jpg").toLowerCase();
       const node = new ImageNode("", e.filename, e.filename, undefined);

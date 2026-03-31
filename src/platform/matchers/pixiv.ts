@@ -243,10 +243,15 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
     if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
     const promises = await zipReader.getEntries()
       .then(
-        entries =>
-          entries.map(e => e.getData?.(new zip_js.Uint8ArrayWriter())
-            .then(data => ({ name: e.filename, data }))
-          )
+        entries => {
+          const ret = [];
+          for (const entry of entries) {
+            if (entry.directory) continue;
+            ret.push(entry.getData(new zip_js.Uint8ArrayWriter())
+              .then(data => ({ name: entry.filename, data })));
+          }
+          return ret;
+        }
       );
     const files = await Promise.all(promises).then((entries => entries.filter(f => f && f.data.length > 0).map(f => f!)));
     if (files.length !== meta.body.frames.length) {
