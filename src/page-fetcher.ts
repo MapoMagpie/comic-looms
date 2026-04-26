@@ -126,7 +126,7 @@ export class PageFetcher {
     // Image Actions, It is an experimental feature.
     try {
       if (ADAPTER.conf.imgNodeActions.length > 0) {
-        const AsyncFunction = async function() { }.constructor;
+        const AsyncFunction = async function () { }.constructor;
         this.nodeActionDesc = ADAPTER.conf.imgNodeActions.filter(a => {
           // if workon is empty, means work on all site.
           if (!a.workon) return true;
@@ -152,8 +152,8 @@ export class PageFetcher {
         const chapters = await chaptersIter.next();
         if (chapters.value) {
           this.appendNewChapters_(chapters.value, first);
+          // afterInit will be called in changeToChapter
           if (first) {
-            this.afterInit?.();
             if (this.chapters.length === 1) {
               this.changeToChapter(0);
             }

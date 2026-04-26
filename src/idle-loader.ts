@@ -5,6 +5,7 @@ import { FetchState } from "./img-fetcher";
 import { ADAPTER } from "./platform/adapt";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
+import { getConf } from "./config";
 
 export class IdleLoader {
   queue: IMGFetcherQueue;
@@ -61,7 +62,7 @@ export class IdleLoader {
     // processingIndexList.length === 0 means idle loader aborted
     if (this.processingIndexList.length === 0) return;
     if (this.queue.length === 0) return;
-    evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
+    evLog("info", "Idle Loader start at: " + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
       // start sereval img fetchers, when img fetcher is done, it will triggered event:imf-on-finished
       this.queue[processingIndex].start();
@@ -124,7 +125,7 @@ export class IdleLoader {
 
   async wait(): Promise<boolean> {
     const { maxWaitMS, minWaitMS } = this;
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
       const time = Math.floor(Math.random() * maxWaitMS + minWaitMS);
       window.setTimeout(() => resolve(true), time);
     });
@@ -140,7 +141,12 @@ export class IdleLoader {
       // check if we are downloading
       // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
       if (this.queue.downloading?.()) return;
-      this.processingIndexList = [newIndex];
+      const threads = getConf().threads;
+      this.processingIndexList = [];
+      for (let i = 0; i < threads; i++) {
+        if (newIndex + i >= this.queue.length) break;
+        this.processingIndexList.push(newIndex + i);
+      }
       this.checkProcessingIndex();
       this.start();
     }, delayRestart || ADAPTER.conf.restartIdleLoader);
