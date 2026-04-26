@@ -1,4 +1,4 @@
-import { saveConf } from "./config";
+import { saveConf, getConf } from "./config";
 import { Downloader } from "./download/downloader";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
@@ -54,7 +54,12 @@ function setup(): DestoryFunc {
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
   PF.afterInit = () => {
     HTML.pageLoading.style.display = "none";
-    IL.processingIndexList = [0];
+    const threads = getConf().threads;
+    IL.processingIndexList = [];
+    for (let i = 0; i < threads && i < PF.queue.length; i++) {
+      IL.processingIndexList.push(i);
+    }
+    evLog("info", `initial fetch, start ${threads} threads, image found length ${PF.queue.length}`);
     IL.start();
     if (ADAPTER.conf.autoEnterBig || BIFM.visible) {
       const imf = IFQ[BIFM.getPageNumber()];
