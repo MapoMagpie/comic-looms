@@ -34,9 +34,11 @@ export type Config = {
   fetchOriginal: boolean,
   /** 中止空闲加载器后的重新启动时间 */
   restartIdleLoader: number,
-  /** 同时加载的图片数量 */
+  /** 最大空闲时加载线程数 */
+  maxIdleThreads: number,
+  /** 最大浏览时加载线程数 */
   threads: number,
-  /** 同时下载的图片数量 */
+  /** 最大下载时加载线程数 */
   downloadThreads: number,
   /** 超时时间(秒)，默认16秒 */
   timeout: number,
@@ -148,6 +150,7 @@ export function defaultConf(): Config {
     autoLoad: true,
     fetchOriginal: false,
     restartIdleLoader: 2000,
+    maxIdleThreads: 1,
     threads: 3,
     downloadThreads: 4,
     timeout: 10,
@@ -360,6 +363,7 @@ export const transient = { imgSrcCSP: false, originalPolicy: "" };
 export type ConfigNumberType = "colCount"
   | "rowHeight"
   | "threads"
+  | "maxIdleThreads"
   | "downloadThreads"
   | "timeout"
   | "autoPageSpeed"
@@ -416,6 +420,7 @@ export type ConfigItem = {
 export const ConfigItems: ConfigItem[] = [
   { key: "colCount", typ: "number" },
   { key: "rowHeight", typ: "number" },
+  { key: "maxIdleThreads", typ: "number" },
   { key: "threads", typ: "number" },
   { key: "downloadThreads", typ: "number" },
   { key: "paginationIMGCount", typ: "number" },

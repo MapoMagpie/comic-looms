@@ -5,7 +5,6 @@ import { FetchState } from "./img-fetcher";
 import { ADAPTER } from "./platform/adapt";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
-import { getConf } from "./config";
 
 export class IdleLoader {
   queue: IMGFetcherQueue;
@@ -141,9 +140,9 @@ export class IdleLoader {
       // check if we are downloading
       // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
       if (this.queue.downloading?.()) return;
-      const threads = getConf().threads;
+      const idleThreads = ADAPTER.conf.maxIdleThreads;
       this.processingIndexList = [];
-      for (let i = 0; i < threads; i++) {
+      for (let i = 0; i < idleThreads; i++) {
         if (newIndex + i >= this.queue.length) break;
         this.processingIndexList.push(newIndex + i);
       }
