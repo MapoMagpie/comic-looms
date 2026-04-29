@@ -91,16 +91,28 @@ const i18nData = {
     'Esta opción solo es efectiva cuando el diseño de la lista de miniaturas es adaptable. La altura de referencia por fila, junto con el número de imágenes por fila, influye en el efecto final de la visualización.'
   ],
   threads: [
-    'Preload Threads',
-    '最大同时加载',
+    'Browse Threads',
+    '最大浏览时加载',
     '동시 로드 수',
-    'Hilos de pre-carga'
+    'Hilos de navegación'
   ],
   threadsTooltip: [
     'Max Preload Threads',
     '大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。',
     '큰 이미지 모드에서 다음 이미지로 이동할 때 미리 로드할 이미지 수입니다.<br>이 값이 1보다 클 경우, 동시에 로드되는 이미지가 더 많아져서 사용 경험이 향상됩니다.',
     'Hilos máximos de pre-carga'
+  ],
+  maxIdleThreads: [
+    'Idle Threads',
+    '最大空闲时加载',
+    '유휴 로드 수',
+    'Hilos inactivos'
+  ],
+  maxIdleThreadsTooltip: [
+    'Maximum number of images to load simultaneously when idle.',
+    '空闲时同时加载的最大图片数量。',
+    '유휴 상태에서 동시에 로드할 최대 이미지 수입니다.',
+    'Número máximo de imágenes para cargar simultáneamente cuando está inactivo.',
   ],
   downloadThreads: [
     'Download Threads',
