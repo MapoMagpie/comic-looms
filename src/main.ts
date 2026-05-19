@@ -16,6 +16,7 @@ import { sleep } from "./utils/sleep";
 import { evLog } from "./utils/ev-log";
 import { Filter } from "./filter";
 import { ContextMenu } from "./ui/context-menu";
+import { ReadingProgress } from "./reading-progress";
 
 // Dynamically import the modules under ./platform/matchers, in which ADAPTER.addSetup will be executed
 const modules = import.meta.glob('./platform/matchers/*.ts', { eager: true });
@@ -39,6 +40,7 @@ function setup(): DestoryFunc {
   const PH: PageHelper = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
   const FVGM: FullViewGridManager = new FullViewGridManager(HTML, BIFM);
+  new ReadingProgress(() => PF.chapters);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, IL, PH);
   addEventListeners(events, HTML, BIFM, DL, PH);

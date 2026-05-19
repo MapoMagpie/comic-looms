@@ -71,6 +71,7 @@ export class PageFetcher {
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
     EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
+    EBUS.subscribe("pf-load-until", (chapterIndex, index, displayIndex) => this.loadUntil(chapterIndex, index, displayIndex));
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
     EBUS.subscribe("pf-append-chapters", (url) => this.appendNewChapters(url).then(() => this.chapters));
     EBUS.subscribe("pf-step-chapters", (oriented) => {
@@ -212,6 +213,21 @@ export class PageFetcher {
   private async appendPages(appendedCount: number) {
     while (true) {
       if (appendedCount + 60 < this.queue.length) break;
+      if (!await this.appendNextPage()) break;
+    }
+  }
+
+  private async loadUntil(chapterIndex: number, index: number, displayIndex: number = index) {
+    if (chapterIndex !== this.chapterIndex || this.queue.downloading?.()) return;
+    const chapter = this.chapters[chapterIndex];
+    let lastNotifiedAt = Date.now();
+    EBUS.emit("notify-message", "info", `Looking for saved page ${displayIndex + 1}...`, 2000);
+    while (!chapter.done && chapter.filteredQueue.length <= index) {
+      if (chapterIndex !== this.chapterIndex || this.abortb) break;
+      if (Date.now() - lastNotifiedAt > 3000) {
+        lastNotifiedAt = Date.now();
+        EBUS.emit("notify-message", "info", `Loaded ${chapter.filteredQueue.length} pages while looking for saved page ${displayIndex + 1}...`, 2000);
+      }
       if (!await this.appendNextPage()) break;
     }
   }

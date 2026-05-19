@@ -47,6 +47,7 @@ export interface Events {
   "pf-append-chapters": (url: string) => Promise<Chapter[]>;
   "pf-try-extend": () => void;
   "pf-retry-extend": () => void;
+  "pf-load-until": (chapterIndex: number, index: number, displayIndex?: number) => void;
   "pf-step-chapters": (oriented: Oriented) => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (imf: IMGFetcher) => void;
@@ -74,4 +75,3 @@ export type EventID = keyof Events;
 
 const EBUS = new EventManager();
 export default EBUS;
-

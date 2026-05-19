@@ -328,6 +328,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     '이미지 뷰어가 열리면 즉시 큰 이미지 보기 모드로 전환됩니다.',
     'Entrar directamente en la vista de imagen grande cuando se haga clic en la entrada del script o se abra automáticamente'
   ],
+  recordReadingProgress: [
+    'Record Reading Progress',
+    '记录阅读进度',
+    '읽기 진행 상황 기록',
+    'Registrar progreso de lectura',
+  ],
+  recordReadingProgressTooltip: [
+    'Remember the last opened page for each chapter and resume from it when the viewer is opened again. If pages changed, the saved image URL is matched first, then the nearest available page is used.',
+    '记住每个章节最后打开的页面，并在再次打开阅读器时恢复。如果页面发生变化，会优先匹配已保存的图片地址，再使用最近的可用页。',
+    '각 챕터에서 마지막으로 연 페이지를 기억하고 뷰어를 다시 열 때 이어서 엽니다. 페이지가 변경된 경우 저장된 이미지 URL을 먼저 찾고, 없으면 가장 가까운 사용 가능한 페이지를 사용합니다.',
+    'Recuerda la última página abierta de cada capítulo y la reanuda al volver a abrir el visor. Si las páginas cambiaron, primero se busca la URL de imagen guardada y luego se usa la página disponible más cercana.',
+  ],
   hdThumbnails: [
     "HD Thumbnails",
     "高清缩略图",
