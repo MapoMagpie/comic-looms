@@ -115,6 +115,8 @@ export type Config = {
   magnifier: boolean,
   /** directly enter into big image view */
   autoEnterBig: boolean,
+  /** Save and restore the last reading position for each chapter. */
+  recordReadingProgress: boolean,
   /** Reading position recorded. A new chapter continuing from this position will be provided next time. */
   pixivRecordReading: boolean,
   /** the aritst's works order, ascend true means old first */
@@ -191,6 +193,7 @@ export function defaultConf(): Config {
     customStyle: "",
     magnifier: false,
     autoEnterBig: false,
+    recordReadingProgress: false,
     pixivRecordReading: false,
     pixivAscendWorks: false,
     pixivUgoiraMode: "ugoira",
@@ -382,6 +385,7 @@ export type ConfigBooleanType = "fetchOriginal"
   | "reverseMultipleImagesPost"
   | "magnifier"
   | "autoEnterBig"
+  | "recordReadingProgress"
   | "pixivRecordReading"
   | "pixivAscendWorks"
   | "hdThumbnails"
@@ -437,6 +441,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "recordReadingProgress", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "dragImageOut", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "smartScrolling", typ: "boolean", gridColumnRange: [1, 11] },
