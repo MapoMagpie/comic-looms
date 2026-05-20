@@ -52,7 +52,7 @@ export class PageFetcher {
   beforeInit?: () => void;
   afterInit?: () => void;
   nodeActionDesc: { icon: string; description: string, fun: Function }[] = [];
-  private appendPageLock: boolean = false;
+  private appendPagePromise?: Promise<boolean>;
   private abortb: boolean = false;
 
   constructor(queue: IMGFetcherQueue, matcher: Matcher<any>, filter: Filter) {
@@ -198,11 +198,7 @@ export class PageFetcher {
       return;
     }
     if (chapter.queue.length === 0) {
-      const first = await chapter.sourceIter.next();
-      if (first.value) {
-        if (first.value.error) throw first.value.error;
-        await this.appendImages(first.value.value, this.chapterIndex);
-      }
+      await this.appendNextPage();
       this.appendPages(this.queue.length);
     }
   }
@@ -233,10 +229,20 @@ export class PageFetcher {
   }
 
   async appendNextPage(force?: boolean): Promise<boolean> {
-    if (this.appendPageLock) return false;
+    if (this.appendPagePromise) {
+      return this.appendPagePromise;
+    }
+    this.appendPagePromise = this.appendNextPageLocked(force)
+      .finally(() => {
+        this.appendPagePromise = undefined;
+      });
+    return this.appendPagePromise;
+  }
+
+  private async appendNextPageLocked(force?: boolean): Promise<boolean> {
     try {
-      this.appendPageLock = true;
-      const chapter = this.chapters[this.chapterIndex];
+      const chapterIndex = this.chapterIndex;
+      const chapter = this.chapters[chapterIndex];
       if (force) chapter.done = false; // FIXME: reset the iter
       if (chapter.done || this.abortb) return false;
       // fetch next page data
@@ -247,15 +253,15 @@ export class PageFetcher {
       }
       // Parse the next page data to IMGFetcher[], then append to view and IMGFetcherQueue
       if (next.value?.value) {
-        return await this.appendImages(next.value.value, this.chapterIndex);
+        return await this.appendImages(next.value.value, chapterIndex);
       }
       // If chapter.sourceIter is done, call this.appendToView() to trigger the update of some view elements
       if (next.done) {
         chapter.done = true;
         if (next.value?.value) {
-          return await this.appendImages(next.value.value, this.chapterIndex);
+          return await this.appendImages(next.value.value, chapterIndex);
         } else {
-          this.appendToView(this.queue.length, [], this.chapterIndex, true);
+          this.appendToView(this.queue.length, [], chapterIndex, true);
           return false;
         }
       } else {
@@ -265,8 +271,6 @@ export class PageFetcher {
       evLog("error", "PageFetcher:appendNextPage error: ", error);
       this.onFailed?.(error);
       return false;
-    } finally {
-      this.appendPageLock = false;
     }
   }
 
