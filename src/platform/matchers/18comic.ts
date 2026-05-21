@@ -81,9 +81,10 @@ class Comic18Matcher extends BaseMatcher<string> {
 
   async parseImgNodes(source: string): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
-    const raw = await window.fetch(source as string).then(resp => resp.text());
-    const document = new DOMParser().parseFromString(raw, "text/html");
-    const elements = Array.from(document.querySelectorAll<HTMLImageElement>(".owl-carousel-page > .center > img"));
+    const raw = await window.fetch(source as string).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html")).catch(Error);
+    if (raw instanceof Error) throw new Error("请求页面失败: " + source + "  " + raw.message, { cause: raw.cause });
+    const elements = Array.from(raw.querySelectorAll<HTMLImageElement>(".owl-carousel-page > .center > img"));
+    if (elements.length === 0) throw new Error("未能从该页面获取有效的图片，" + source);
     for (const element of elements) {
       const src = element.getAttribute("data-src");
       if (!src) {
