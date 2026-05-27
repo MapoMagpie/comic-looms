@@ -2,9 +2,9 @@ import { IMGFetcher } from "../../img-fetcher";
 import ImageNode from "../../img-node";
 import { Chapter } from "../../page-fetcher";
 import { evLog } from "../../utils/ev-log";
-import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
+// @ts-ignore
 class MangaParkMatcher extends BaseMatcher<string> {
 
   preferServer: { server: string, done: number }[] = [];
@@ -92,11 +92,11 @@ class MangaParkMatcher extends BaseMatcher<string> {
   }
 
 }
-ADAPTER.addSetup({
-  name: "MangaPark",
-  workURLs: [
-    /(mangapark|comicpark|readpark|mpark).(net|com|org|me|io|to)\/title\/[^/]+$/
-  ],
-  match: ["https://mangapark.com/*"],
-  constructor: () => new MangaParkMatcher(),
-});
+// ADAPTER.addSetup({
+//   name: "MangaPark",
+//   workURLs: [
+//     /(mangapark|comicpark|readpark|mpark).(net|com|org|me|io|to)\/title\/[^/]+$/
+//   ],
+//   match: ["https://mangapark.com/*"],
+//   constructor: () => new MangaParkMatcher(),
+// });
