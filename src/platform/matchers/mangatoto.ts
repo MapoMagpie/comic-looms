@@ -3,9 +3,9 @@ import { IMGFetcher } from "../../img-fetcher";
 import ImageNode from "../../img-node";
 import { Chapter } from "../../page-fetcher";
 import { evLog } from "../../utils/ev-log";
-import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
+// @ts-ignore
 class BatotoMatcher extends BaseMatcher<string> {
 
   meta?: GalleryMeta;
@@ -143,11 +143,11 @@ class BatotoMatcher extends BaseMatcher<string> {
   }
 
 }
-ADAPTER.addSetup({
-  name: "BATO.TO v3x",
-  workURLs: [
-    /(mangatoto.com|bato.(to|si|ing))\/title\/\d+[^\/]*$/
-  ],
-  match: ["https://mangatoto.com/*", "https://bato.to/*"],
-  constructor: () => new BatotoMatcher(),
-});
+// ADAPTER.addSetup({
+//   name: "BATO.TO v3x",
+//   workURLs: [
+//     /(mangatoto.com|bato.(to|si|ing))\/title\/\d+[^\/]*$/
+//   ],
+//   match: ["https://mangatoto.com/*", "https://bato.to/*"],
+//   constructor: () => new BatotoMatcher(),
+// });
