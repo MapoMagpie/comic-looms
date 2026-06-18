@@ -1349,7 +1349,13 @@ const kbInFullViewGridData: Record<AppEventIDInFullViewGrid | AppEventIDInBigImg
     '排除图片们',
     '이미지 제외',
     'Excluir Imágenes'
-  ]
+  ],
+  'reload-image': [
+    'Load Image or Reload',
+    '加载图片或重新加载',
+    '이미지 로드 또는 다시 로드',
+    'Cargar Imagen o Recargar'
+  ],
 };
 
 // type KBInMainKeys = keyof (typeof kbInMainData);

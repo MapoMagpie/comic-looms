@@ -43,6 +43,7 @@ export type AppEventIDInFullViewGrid = "open-big-image-mode"
   | "cherry-pick-select-range"
   | "cherry-pick-exclude"
   | "cherry-pick-exclude-range"
+  | "reload-image"
   | "pause-auto-load-temporarily"
   | "exit-full-view-grid"
   | "columns-increase"
@@ -470,6 +471,20 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             const index = parseInt((event.relatedTarget as HTMLElement)?.getAttribute("data-index") ?? "");
             if (isNaN(index) || index < 0) return;
             EBUS.emit("add-cherry-pick-range", FVGM.chapterIndex, index, false, true);
+          }
+        },
+        false, true
+      ),
+      "reload-image": new AppEventDesc(
+        [""],
+        `${icons.reloadImageIcon}`,
+        (event) => {
+          if (event instanceof MouseEvent && event.relatedTarget) {
+            const index = parseInt((event.relatedTarget as HTMLElement)?.getAttribute("data-index") ?? "");
+            if (isNaN(index) || index < 0) return;
+            IFQ[index].resetStage();
+            IFQ[index].start();
+            //TODO
           }
         },
         false, true

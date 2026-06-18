@@ -79,6 +79,7 @@ export class ContextMenu {
       ["cherry-pick-select-range", "onGrid", true],
       ["cherry-pick-exclude", "onGrid", true],
       ["cherry-pick-exclude-range", "onGrid", true],
+      ["reload-image", "onGrid", true],
       ["go-prev-chapter", "alway", false],
       ["go-next-chapter", "alway", false],
       ["start-download", "alway", true],
