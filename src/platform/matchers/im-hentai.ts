@@ -4,28 +4,27 @@ import q from "../../utils/query-element";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
-class IMHentaiMatcher extends BaseMatcher<null> {
+type IMHentaiData = {
+  server: string, uid: string, gid: string, imgDir: string, total: number, gth: Record<string, string>,
+}
+
+class IMHentaiMatcher extends BaseMatcher<IMHentaiData> {
   meta?: GalleryMeta;
-  data?: { server: string, uid: string, gid: string, imgDir: string, total: number };
-  gth?: Record<string, string>;
 
   async fetchOriginMeta(node: ImageNode, _: boolean): Promise<OriginMeta> {
     return { url: node.originSrc! };
   }
 
-  async parseImgNodes(): Promise<ImageNode[]> {
-    if (!this.data || !this.gth) {
-      throw new Error("impossibility");
-    }
+  async parseImgNodes(data: IMHentaiData): Promise<ImageNode[]> {
     const ret: ImageNode[] = [];
-    const digits = this.data.total.toString().length;
-    for (let i = 1; i <= this.data.total; i++) {
-      const url = `https://m${this.data.server}.imhentai.xxx/${this.data.imgDir}/${this.data.gid}/${i}t.jpg`;
-      const href = `https://imhentai.xxx/view/${this.data.uid}/${i}/`;
-      const ext = imParseExt(this.gth[i.toString()]);
-      const originSrc = `https://m${this.data.server}.imhentai.xxx/${this.data.imgDir}/${this.data.gid}/${i}.${ext}`;
+    const digits = data.total.toString().length;
+    for (let i = 1; i <= data.total; i++) {
+      const url = `https://m${data.server}.imhentai.xxx/${data.imgDir}/${data.gid}/${i}t.jpg`;
+      const href = `https://imhentai.xxx/view/${data.uid}/${i}/`;
+      const ext = imParseExt(data.gth[i.toString()]);
+      const originSrc = `https://m${data.server}.imhentai.xxx/${data.imgDir}/${data.gid}/${i}.${ext}`;
       let wh = undefined;
-      const splits = this.gth[i.toString()].split(",");
+      const splits = data.gth[i.toString()].split(",");
       if (splits.length === 3) {
         wh = { w: parseInt(splits[1]), h: parseInt(splits[2]) };
       }
@@ -35,19 +34,19 @@ class IMHentaiMatcher extends BaseMatcher<null> {
     return ret;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<Result<null>> {
+  async *fetchPagesSource(): AsyncGenerator<Result<IMHentaiData>> {
     const server = q<HTMLInputElement>("#load_server", document).value;
     const uid = q<HTMLInputElement>("#gallery_id", document).value;
     const gid = q<HTMLInputElement>("#load_id", document).value;
     const imgDir = q<HTMLInputElement>("#load_dir", document).value;
     const total = q<HTMLInputElement>("#load_pages", document).value;
-    this.data = { server, uid, gid, imgDir, total: Number(total) };
     const gthRaw = Array.from(document.querySelectorAll("script"))
       .find(s => s.textContent?.trimStart().startsWith("var g_th"))
       ?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
     if (!gthRaw) throw new Error("cannot match gallery images info");
-    this.gth = JSON.parse(gthRaw) as Record<string, string>;
-    yield Result.ok(null);
+    const gth = JSON.parse(gthRaw) as Record<string, string>; // 1: "w,1280,963" ​ 2: "w,1280,963"
+    const data = { server, uid, gid, imgDir, total: Number(total), gth };
+    yield Result.ok(data);
   }
 
   title(): string {
