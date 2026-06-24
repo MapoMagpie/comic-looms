@@ -125,20 +125,21 @@ let destoryFunc: DestoryFunc | undefined;
 const debouncer = new Debouncer();
 function start() {
   debouncer.addEvent("LOCATION-CHANGE", () => {
-    const newStart = () => {
+    const innerStart = () => {
       if (window.self !== window.top) {
         evLog("error", "in iframe");
         return;
       }
       if (document.querySelector(".ehvp-base")) return;
+      ADAPTER.reset();
       ADAPTER.ready.then(() => {
         destoryFunc = setup()
       });
     };
     if (destoryFunc) {
-      destoryFunc().then(newStart);
+      destoryFunc().then(innerStart);
     } else {
-      newStart();
+      innerStart();
     }
   }, 20);
 }

@@ -10,8 +10,8 @@ export type MatcherSetup = {
 
 export class Adapter {
   ready: Promise<MatcherSetup>;
-  resolve?: (matcher: MatcherSetup) => void;
-  reject: any;
+  private resolve?: (matcher: MatcherSetup) => void;
+  // private reject: any;
   matchers: MatcherSetup[];
   matcher?: MatcherSetup;
   conf: Config & { selectedSiteNameConfig?: string };
