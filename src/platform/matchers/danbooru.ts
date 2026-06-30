@@ -322,6 +322,59 @@ class E621Matcher extends DanbooruMatcher {
     return "e621";
   }
 }
+class ATFMatcher extends DanbooruMatcher{
+  site(): string {return "AllTheFallen";}
+  private baseUrl: string = "https://booru.allthefallen.moe";
+  getBlacklist(doc: Document): string[] {
+     const ul = doc.querySelector('ul#blacklist-list');
+     if (!ul) return [];
+     return Array.from(ul.querySelectorAll('li a')).map(a => a.textContent?.trim()).filter((text): text is string => !!text && text.length > 0)
+    }
+  nextPage(doc: Document): string | null {
+      const nextP = doc.querySelector('a.paginator-next');
+      const path = nextP ? nextP.getAttribute('href') : null;
+      if (!path) return null;
+    return new URL(path, this.baseUrl).href;}
+  queryList(doc: Document): HTMLElement[] {return Array.from(doc.querySelectorAll(".posts-container > article:not(.blacklisted-active)"));}
+  toImgNode(ele: HTMLElement): [ImageNode | null, string] {
+    const img = ele.querySelector<HTMLImageElement>("img");
+    if (!img) {
+      evLog("error", "warn: cannot find img element", img);
+      return [null, ""];
+    }
+    const href = ele.querySelector("a")?.getAttribute("href") ?? null;
+    if (!href) {
+      evLog("error", "warn: cannot find href", ele);
+      return [null, ""];
+    }
+    const node = new ImageNode(img.src, href, `${ele.id}.jpg`);
+    const match1 = href.match(/\/posts\/(\d+)/);
+    const id = match1 ? `post_${match1[1]}` : undefined;
+    if (id) {
+      const addFav = new NodeAction("♥", "Add to favorites", async () => {
+       
+          EBUS.emit("notify-message", "error", "Not implemented");
+          throw new Error("Not implemented");
+        
+      });
+      node.actions.push(addFav);
+    }
+    const tags = img.title.split(" ").map(t => t.trim()).filter(t => (t) && !(t.startsWith("score") || t.startsWith("rating"))).map(t => "tag:" + t);
+    node.setTags(...tags);
+    return [node, img.getAttribute("alt") || ""];
+  } 
+getOriginalURL(doc: Document): string | null {
+    const link = doc.querySelector('li#post-option-download > a');
+    return link?.getAttribute("href")?.split('?')[0] ?? null;
+}
+getNormalURL(doc: Document): string | null {
+    const link = doc.getElementById('image');
+    return link?.getAttribute("src" ) ?? null;
+
+}
+  extractIDFromHref(href: string): string | undefined {
+      return href.match(/\/posts\/(\d+)/)?.[1];} 
+}
 
 ADAPTER.addSetup({
   name: "e621",
@@ -357,4 +410,13 @@ ADAPTER.addSetup({
   ],
   match: ["https://danbooru.donmai.us/*"],
   constructor: () => new DanbooruDonmaiMatcher(),
+});
+
+ADAPTER.addSetup({
+  name: "AllTheFallen",
+  workURLs: [
+    /booru.allthefallen.moe\/(posts(?!\/)|$)/
+  ],
+  match: ["https://booru.allthefallen.moe/*"],
+  constructor: () => new ATFMatcher(),
 });
