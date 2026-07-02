@@ -5,10 +5,13 @@ import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
 type HNImageInfo = {
-  image: string,
+  image?: string,
+  image_avif?: string,
+  image_webp?: string,
+  image_fallback?: string,
   label: string, // "1"
   type: "image",
-  url_label: string,
+  url_label: string, // "001"
 }
 const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
 const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
@@ -50,8 +53,11 @@ class HentaiNexusMatcher extends BaseMatcher<Document> {
       }
     }
     if (!this.readerData) throw new Error("cannot find reader data");
-    const hash = node.href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
-    const url = this.readerData.find(d => d.url_label === hash)?.image;
+    const hash = node.href.match(REGEXP_EXTRACT_HASH)?.[1];
+    if (!hash) throw new Error("cannot find image url_label");
+    const data = this.readerData.find(d => d.url_label === hash);
+    if (!data) throw new Error("cannot find image data by url_label");
+    const url = data.image_avif ?? data.image_webp ?? data.image ?? data.image_fallback;
     if (!url) throw new Error("cannot find image url");
     const ext = url.split(".").pop();
     return { url, title: hash + "." + ext };
