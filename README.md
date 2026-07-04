@@ -42,6 +42,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
 - [Twitter|X: User's Media, Lists, For you, Following](https://x.com/NASA/media)
 - [Instagram User POSTS](https://www.instagram.com/nasa)
+- [Pinterest: Home feed, Search Pins, Pin detail](https://www.pinterest.com/search/pins/?q=illustration)
 - [ArtStation User Portfolio](https://www.artstation.com)
 - [pixiv.net: Artists' illust and manga, Your Homepage](https://pixiv.net)
 - [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
