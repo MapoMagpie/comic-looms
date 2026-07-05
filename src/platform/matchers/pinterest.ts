@@ -41,7 +41,7 @@ type PinterestPage = {
 }
 
 const RESOURCE_NAME = "BaseSearchResource";
-const PIN_ID_REGEXP = /\/pin\/(\d+)/;
+const PIN_ID_REGEXP = /\/pin\/([^/]+)/;
 const PIN_IMG_SELECTOR = "a[href*='/pin/'] img[src*='pinimg.com']";
 const DOM_PIN_BATCH_SIZE = 16;
 
@@ -50,6 +50,7 @@ type PinterestDomPin = {
   href: string,
   title: string,
   thumbnailSrc: string,
+  originSrc?: string,
   rect: {
     w: number,
     h: number,
@@ -71,26 +72,44 @@ class PinterestMatcher extends BaseMatcher<PinterestPage> {
         return;
       }
 
-      const initial = parseInitialProps();
       if (isPinPage()) {
-        const pins = extractPinPagePins(initial);
-        pins.forEach(pin => this.seenPinIDs.add(pin.id));
-        yield Result.ok({ pins });
+        const initial = tryParseInitialProps();
+        if (initial) {
+          const pins = extractPinPagePins(initial);
+          pins.forEach(pin => this.seenPinIDs.add(pin.id));
+          yield Result.ok({ pins });
+        }
         for await (const page of this.fetchDomPinPages()) {
           yield Result.ok(page);
         }
         return;
       }
 
-      const resource = extractSearchResource(initial);
+      const initial = tryParseInitialProps();
+      const resource = initial ? tryExtractSearchResource(initial) : undefined;
+      if (!resource) {
+        for await (const page of this.fetchDomPinPages()) {
+          yield Result.ok(page);
+        }
+        return;
+      }
       this.resourceOptions = resource.options;
       this.nextBookmark = resource.nextBookmark;
+      resource.pins.forEach(pin => this.seenPinIDs.add(pin.id));
       yield Result.ok({ pins: resource.pins, nextBookmark: resource.nextBookmark });
 
       while (this.nextBookmark && this.nextBookmark !== "-end-") {
-        const next = await this.fetchSearchPage(this.nextBookmark);
-        this.nextBookmark = next.nextBookmark;
-        yield Result.ok(next);
+        try {
+          const next = await this.fetchSearchPage(this.nextBookmark);
+          this.nextBookmark = next.nextBookmark;
+          next.pins?.forEach(pin => this.seenPinIDs.add(pin.id));
+          yield Result.ok(next);
+        } catch {
+          this.nextBookmark = undefined;
+          for await (const page of this.fetchDomPinPages()) {
+            yield Result.ok(page);
+          }
+        }
       }
     } catch (error) {
       yield Result.err(error as Error);
@@ -121,7 +140,7 @@ class PinterestMatcher extends BaseMatcher<PinterestPage> {
         pin.href,
         buildTitleFromText(pin.title, pin.id, pin.thumbnailSrc),
         undefined,
-        undefined,
+        pin.originSrc,
         pin.rect,
       ));
       this.pinCount++;
@@ -201,14 +220,15 @@ class PinterestMatcher extends BaseMatcher<PinterestPage> {
     for (const img of imgs) {
       const href = img.closest<HTMLAnchorElement>("a[href*='/pin/']")?.href;
       const id = href?.match(PIN_ID_REGEXP)?.[1];
-      const src = img.currentSrc || img.src;
-      if (!href || !id || !src || id === currentID || this.seenPinIDs.has(id)) continue;
+      const srcs = pickDomImageSrcs(img);
+      if (!href || !id || !srcs.thumbnail || id === currentID || this.seenPinIDs.has(id)) continue;
       this.seenPinIDs.add(id);
       pins.push({
         id,
         href,
         title: img.alt || `pinterest-${id}`,
-        thumbnailSrc: src,
+        thumbnailSrc: srcs.thumbnail,
+        originSrc: srcs.origin,
         rect: {
           w: img.naturalWidth || img.width || 236,
           h: img.naturalHeight || img.height || 236,
@@ -237,6 +257,14 @@ function parseInitialProps(doc: Document = document): PinterestInitialProps {
   return JSON.parse(raw) as PinterestInitialProps;
 }
 
+function tryParseInitialProps(doc: Document = document): PinterestInitialProps | undefined {
+  try {
+    return parseInitialProps(doc);
+  } catch {
+    return undefined;
+  }
+}
+
 function extractSearchResource(initial: PinterestInitialProps): { options: Record<string, unknown>, pins: PinterestPin[], nextBookmark?: string } {
   const resources = initial.initialReduxState?.resources?.[RESOURCE_NAME];
   const entry = resources ? Object.entries(resources)[0] : undefined;
@@ -245,6 +273,14 @@ function extractSearchResource(initial: PinterestInitialProps): { options: Recor
   const options = Object.fromEntries(JSON.parse(optionsRaw) as [string, unknown][]);
   const pins = Array.isArray(resource.data?.results) ? resource.data.results.filter(isPin) : [];
   return { options, pins, nextBookmark: resource.nextBookmark };
+}
+
+function tryExtractSearchResource(initial: PinterestInitialProps): { options: Record<string, unknown>, pins: PinterestPin[], nextBookmark?: string } | undefined {
+  try {
+    return extractSearchResource(initial);
+  } catch {
+    return undefined;
+  }
 }
 
 function extractPinPagePins(initial: PinterestInitialProps, expectedID?: string): PinterestPin[] {
@@ -271,6 +307,18 @@ function pickImage(images: PinterestImageMap, keys: string[]): PinterestImage | 
     }
   }
   return Object.values(images).flat().find(img => img?.url);
+}
+
+function pickDomImageSrcs(img: HTMLImageElement): { thumbnail: string, origin?: string } {
+  const srcset = (img.getAttribute("srcset") ?? "")
+    .split(",")
+    .map(src => src.trim().split(/\s+/)[0])
+    .filter(Boolean);
+  const current = img.currentSrc || img.src;
+  const sources = [...srcset, current].filter(Boolean);
+  const origin = sources.find(src => src.includes("/originals/")) ?? sources.find(src => src.includes("/736x/")) ?? current;
+  const thumbnail = current || sources.find(src => src.includes("/474x/")) || sources.find(src => src.includes("/236x/")) || origin;
+  return { thumbnail, origin };
 }
 
 function buildTitle(pin: PinterestPin, src: string): string {
