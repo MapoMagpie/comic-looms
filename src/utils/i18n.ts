@@ -102,6 +102,18 @@ const i18nData = {
     '큰 이미지 모드에서 다음 이미지로 이동할 때 미리 로드할 이미지 수입니다.<br>이 값이 1보다 클 경우, 동시에 로드되는 이미지가 더 많아져서 사용 경험이 향상됩니다.',
     'Hilos máximos de pre-carga'
   ],
+  maxPreloadDistance: [
+    'Max Preload Distance',
+    '最大预加载距离',
+    'Max Preload Distance',
+    'Distancia maxima de precarga'
+  ],
+  maxPreloadDistanceTooltip: [
+    'Do not preload images farther than this many pages from the current image. Set to 0 to disable the distance limit.',
+    '不预加载距离当前图片超过此页数的图片。设为 0 可关闭距离限制。',
+    'Do not preload images farther than this many pages from the current image. Set to 0 to disable the distance limit.',
+    'No precargar imagenes mas lejos que esta distancia desde la imagen actual. Use 0 para desactivar el limite.'
+  ],
   maxIdleThreads: [
     'Idle Threads',
     '最大空闲时加载',

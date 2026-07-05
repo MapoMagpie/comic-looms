@@ -16,6 +16,12 @@ import { HTMLUgoiraElement } from "../utils/ugoira";
 import { SubData } from "../platform/platform";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement | HTMLUgoiraElement;
+type ViewportAxis = "x" | "y";
+type ViewportPosition = {
+  center: number,
+  end: number,
+  start: number,
+};
 
 export class BigImageFrameManager {
   root: HTMLElement;
@@ -40,6 +46,7 @@ export class BigImageFrameManager {
   lastMouse?: { x: number, y: number };
   pageNumInChapter: number[] = [];
   oriented: Oriented = "next";
+  lastViewportSyncAt: number = 0;
   // When bifm opens an image, the IntersectionObserver will immediately start detecting and rendering after 50 milliseconds, 
   // but we want to only start rendering when the corresponding image index is detected.
   intersectingIndexLock: boolean = false;
@@ -51,6 +58,8 @@ export class BigImageFrameManager {
     this.getChapter = getChapter;
     this.scrollerY = new Scroller(this.root);
     this.scrollerX = new Scroller(this.root, undefined, "x");
+    this.scrollerY.onScrolled = () => this.syncCurrentFromViewportThrottled();
+    this.scrollerX.onScrolled = () => this.syncCurrentFromViewportThrottled();
 
     this.container = document.createElement("div");
     this.container.classList.add("bifm-container");
@@ -330,8 +339,8 @@ export class BigImageFrameManager {
   }
 
   scrollStop() {
-    this.scrollerY.scrolling = false;
-    this.scrollerX.scrolling = false;
+    this.scrollerY.stop();
+    this.scrollerX.stop();
   }
 
   hidden(event?: MouseEvent) {
@@ -451,6 +460,7 @@ export class BigImageFrameManager {
         } else {
           this.root.scrollLeft = element.offsetLeft;
         }
+        this.syncCurrentFromViewport();
         break;
       }
       case "continuous": {
@@ -461,6 +471,7 @@ export class BigImageFrameManager {
         let marginT = index === 0 ? 0 : Math.floor((rootH - height) / 2);
         marginT = Math.max(0, marginT);
         this.root.scrollTop = element.offsetTop - marginT;
+        this.syncCurrentFromViewport();
         break;
       }
     }
@@ -488,6 +499,8 @@ export class BigImageFrameManager {
   }
 
   checkCurrent() {
+    if (this.syncCurrentFromViewport()) return;
+
     const rootRect = this.root.getBoundingClientRect();
     const isCenter: (rect: DOMRect, rootRect: DOMRect) => boolean = (() => {
       if (ADAPTER.conf.readMode === "continuous") {
@@ -502,15 +515,73 @@ export class BigImageFrameManager {
       if (isCenter(rect, rootRect)) {
         const imf = this.getIMF(element);
         if (imf === null) continue;
-        if (imf.index === this.currentIndex) continue;
-        EBUS.emit("ifq-do", imf.index, imf, this.oriented);
-        this.currentIndex = imf.index;
-        this.pageNumInChapter[this.chapterIndex] = imf.index;
-        if (element.firstElementChild) {
-          this.tryPlayVideo(element.firstElementChild as HTMLElement);
-        }
+        this.setCurrentFromElement(element, imf);
         break;
       }
+    }
+  }
+
+  syncCurrentFromViewport(): boolean {
+    if (ADAPTER.conf.readMode === "pagination") return false;
+    const rootRect = this.root.getBoundingClientRect();
+    const axis = this.viewportAxis();
+    const root = viewportPosition(rootRect, axis);
+    let nearest: { element: HTMLElement, distance: number } | undefined;
+
+    for (const element of Array.from(this.container.children) as HTMLElement[]) {
+      const index = parseIndex(element);
+      if (index < 0) continue;
+      const rect = element.getBoundingClientRect();
+      const elementPos = viewportPosition(rect, axis);
+      if (!isVisibleInViewport(root, elementPos)) continue;
+      if (this.trySetCenteredElement(element, elementPos, root.center)) return true;
+      nearest = nearestViewportElement(nearest, element, elementPos, root.center);
+    }
+
+    return this.trySetNearestElement(nearest);
+  }
+
+  syncCurrentFromViewportThrottled(timeout: number = 80) {
+    const now = Date.now();
+    if (now - this.lastViewportSyncAt < timeout) return;
+    this.lastViewportSyncAt = now;
+    this.syncCurrentFromViewport();
+  }
+
+  private trySetCenteredElement(element: HTMLElement, position: ViewportPosition, center: number): boolean {
+    if (position.start > center || position.end < center) return false;
+    const imf = this.getIMF(element);
+    if (imf === null) return false;
+    this.setCurrentFromElement(element, imf);
+    return true;
+  }
+
+  private trySetNearestElement(nearest?: { element: HTMLElement }): boolean {
+    if (!nearest) return false;
+    const imf = this.getIMF(nearest.element);
+    if (imf === null) return false;
+    this.setCurrentFromElement(nearest.element, imf);
+    return true;
+  }
+
+  private viewportAxis(): ViewportAxis {
+    return ADAPTER.conf.readMode === "horizontal" ? "x" : "y";
+  }
+
+  private setCurrentFromElement(element: HTMLElement, imf: IMGFetcher) {
+    if (!this.renderingElements.includes(element)) {
+      this.renderingElements.push(element);
+    }
+    if (element.childElementCount === 0) {
+      element.appendChild(this.newMediaNode(imf));
+    }
+    if (imf.index !== this.currentIndex) {
+      this.currentIndex = imf.index;
+      this.pageNumInChapter[this.chapterIndex] = imf.index;
+      EBUS.emit("ifq-do", imf.index, imf, this.oriented);
+    }
+    if (element.firstElementChild) {
+      this.tryPlayVideo(element.firstElementChild as HTMLElement);
     }
   }
 
@@ -566,11 +637,12 @@ export class BigImageFrameManager {
       }
     }
     if (ADAPTER.conf.readMode !== "pagination") {
+      this.syncCurrentFromViewportThrottled();
       this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(), 69);
     }
   }
 
-  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean, originEvent?: Event) {
+  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean, originEvent?: Event): Promise<void> {
     const preventDefault = () => {
       event.preventDefault();
       originEvent?.preventDefault();
@@ -579,60 +651,100 @@ export class BigImageFrameManager {
     if (event.buttons === 2) {
       preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
-      return;
+      return Promise.resolve();
     }
     const withShift = originEvent instanceof WheelEvent && originEvent.shiftKey;
     const smartScrolling = !withShift && ADAPTER.conf.smartScrolling;
     switch (ADAPTER.conf.readMode) {
-      case "pagination": {
-        const over = this.checkOverflow();
-
-        let deltaY = event.deltaY;
-        if (withShift && ADAPTER.conf.reversePages) deltaY = deltaY * -1;
-        const [o, neg_o]: [Oriented, Oriented] = deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
-        this.oriented = o;
-        const [$ori, $neg] = ADAPTER.conf.reversePages ? [neg_o, o] : [o, neg_o];
-
-        const rotated = this.root.classList.contains("bifm-rotate-90") || this.root.classList.contains("bifm-rotate-270");
-        if (rotated) {
-          this.stepNext(this.oriented);
-          break;
-        }
-
-        if (over[o].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
-          preventDefault();
-          if (!noPrevent) {
-            if (over[neg_o].overY > 0 || over[$neg].overX > 0) {
-              if (this.tryPreventStep()) break;
-            }
-          }
-          this.stepNext(o);
-          break;
-        }
-        let fix = o === "next" ? 1 : -1;
-        if (customScrolling && over[o].overY > 0) {
-          this.scrollerY.scroll(Math.min(over[o].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
-        }
-        if (customScrolling || smartScrolling) {
-          fix = fix * (ADAPTER.conf.reversePages ? -1 : 1);
-          if (over[o].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
-            this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
-          }
-        }
+      case "pagination":
+        this.handlePaginationWheel(event, withShift, smartScrolling, customScrolling, noPrevent, preventDefault);
         break;
-      }
-      case "horizontal": {
-        if (customScrolling || smartScrolling) {
-          preventDefault();
-          this.scrollerX.scroll(event.deltaY * (ADAPTER.conf.reversePages ? -1 : 1), ADAPTER.conf.scrollingSpeed);
-        }
-        break;
-      }
-      case "continuous": {
-        if (customScrolling) {
-          this.scrollerY.scroll(event.deltaY, ADAPTER.conf.scrollingSpeed);
-        }
-        break;
+      case "horizontal":
+        return this.handleHorizontalWheel(event, smartScrolling, customScrolling, preventDefault);
+      case "continuous":
+        return this.handleContinuousWheel(event, customScrolling);
+    }
+    return Promise.resolve();
+  }
+
+  private handlePaginationWheel(
+    event: WheelEvent,
+    withShift: boolean,
+    smartScrolling: boolean,
+    customScrolling: boolean | undefined,
+    noPrevent: boolean | undefined,
+    preventDefault: () => void,
+  ) {
+    const over = this.checkOverflow();
+    const direction = wheelDirection(event.deltaY, withShift);
+    this.oriented = direction.o;
+    const [$ori, $neg] = ADAPTER.conf.reversePages ? [direction.neg, direction.o] : [direction.o, direction.neg];
+
+    if (this.isRotated()) {
+      this.stepNext(this.oriented);
+      return;
+    }
+    if (this.tryStepAtPaginationBoundary(over, direction.o, direction.neg, $ori, $neg, noPrevent, preventDefault)) return;
+    this.scrollInsidePagination(event, over, direction.o, $ori, customScrolling, smartScrolling);
+  }
+
+  private handleHorizontalWheel(
+    event: WheelEvent,
+    smartScrolling: boolean,
+    customScrolling: boolean | undefined,
+    preventDefault: () => void,
+  ): Promise<void> {
+    if (!customScrolling && !smartScrolling) return Promise.resolve();
+    preventDefault();
+    return this.scrollerX
+      .scroll(event.deltaY * (ADAPTER.conf.reversePages ? -1 : 1), ADAPTER.conf.scrollingSpeed)
+      .then(() => { this.syncCurrentFromViewport(); });
+  }
+
+  private handleContinuousWheel(event: WheelEvent, customScrolling?: boolean): Promise<void> {
+    if (!customScrolling) return Promise.resolve();
+    return this.scrollerY
+      .scroll(event.deltaY, ADAPTER.conf.scrollingSpeed)
+      .then(() => { this.syncCurrentFromViewport(); });
+  }
+
+  private isRotated(): boolean {
+    return this.root.classList.contains("bifm-rotate-90") || this.root.classList.contains("bifm-rotate-270");
+  }
+
+  private tryStepAtPaginationBoundary(
+    over: { "prev": { overX: number, overY: number }, "next": { overX: number, overY: number } },
+    o: Oriented,
+    neg: Oriented,
+    $ori: Oriented,
+    $neg: Oriented,
+    noPrevent: boolean | undefined,
+    preventDefault: () => void,
+  ): boolean {
+    if (over[o].overY - 1 > 0 || over[$ori].overX - 1 > 0) return false;
+    preventDefault();
+    if (!noPrevent && (over[neg].overY > 0 || over[$neg].overX > 0) && this.tryPreventStep()) return true;
+    this.stepNext(o);
+    return true;
+  }
+
+  private scrollInsidePagination(
+    event: WheelEvent,
+    over: { "prev": { overX: number, overY: number }, "next": { overX: number, overY: number } },
+    o: Oriented,
+    $ori: Oriented,
+    customScrolling: boolean | undefined,
+    smartScrolling: boolean,
+  ) {
+    let fix = o === "next" ? 1 : -1;
+    const step = Math.abs(Math.ceil(event.deltaY / 4));
+    if (customScrolling && over[o].overY > 0) {
+      this.scrollerY.scroll(Math.min(over[o].overY, Math.abs(event.deltaY * 3)) * fix, step);
+    }
+    if (customScrolling || smartScrolling) {
+      fix = fix * (ADAPTER.conf.reversePages ? -1 : 1);
+      if (over[o].overY - 1 <= 0 && over[$ori].overX > 0) {
+        this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, step);
       }
     }
   }
@@ -998,6 +1110,43 @@ function parseIndex(ele: HTMLElement): number {
   const d = ele.getAttribute("d-index") || "";
   const i = parseInt(d);
   return isNaN(i) ? -1 : i;
+}
+
+function isVisibleInViewport(root: ViewportPosition, element: ViewportPosition): boolean {
+  return element.end >= root.start && element.start <= root.end;
+}
+
+function nearestViewportElement(
+  nearest: { element: HTMLElement, distance: number } | undefined,
+  element: HTMLElement,
+  position: ViewportPosition,
+  center: number,
+): { element: HTMLElement, distance: number } {
+  const elementCenter = position.start + (position.end - position.start) / 2;
+  const distance = Math.abs(elementCenter - center);
+  if (!nearest || distance < nearest.distance) return { element, distance };
+  return nearest;
+}
+
+function viewportPosition(rect: DOMRect, axis: ViewportAxis): ViewportPosition {
+  if (axis === "x") {
+    return {
+      center: rect.left + rect.width / 2,
+      end: rect.right,
+      start: rect.left,
+    };
+  }
+  return {
+    center: rect.top + rect.height / 2,
+    end: rect.bottom,
+    start: rect.top,
+  };
+}
+
+function wheelDirection(deltaY: number, withShift: boolean): { o: Oriented, neg: Oriented } {
+  if (withShift && ADAPTER.conf.reversePages) deltaY = deltaY * -1;
+  const [o, neg]: [Oriented, Oriented] = deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+  return { o, neg };
 }
 
 function stickyMouse(element: HTMLElement, event: MouseEvent, lastMouse: { x: number, y: number }, elementsWidth?: number) {

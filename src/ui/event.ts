@@ -84,6 +84,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         colCount: [1, 12],
         rowHeight: [50, 4096],
         threads: [0, 10],
+        maxPreloadDistance: [0, 200],
         maxIdleThreads: [0, 10],
         downloadThreads: [1, 10],
         timeout: [2, 40],
