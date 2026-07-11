@@ -5,10 +5,14 @@ export class Scroller {
   private distance: number = 0;
   private additional: number = 0;
   private lastDirection: "up" | "down" | undefined;
-  private directionChanged: boolean = false;
+  private animationID: number = 0;
+  private scrollSign: 1 | -1 = 1;
+  private currentPromise?: Promise<void>;
+  private currentResolve?: () => void;
   private scrollMargin: () => number;
   private maxScrollMargin: () => number;
   private setScrollMargin: (margin: number) => void;
+  onScrolled?: () => void;
   constructor(element: HTMLElement, step?: number, mode?: "y" | "x") {
     this.element = element;
     this.step = step || 1;
@@ -25,39 +29,55 @@ export class Scroller {
 
   scroll(delta: number, step?: number): Promise<void> {
     if (step) this.step = step;
-    let resolve: () => void;
-    const promise = new Promise<void>((r) => resolve = r);
-    this.distance = Math.abs(delta);
+    const distance = Math.abs(delta);
+    if (distance <= 0) return Promise.resolve();
     const direction = delta < 0 ? "up" : "down";
-    this.directionChanged = this.lastDirection !== undefined && this.lastDirection !== direction;
-    if (this.scrolling || this.distance <= 0) {
-      // this.additional = 0; // disable additional temporary
-      return promise;
+    if (this.scrolling) {
+      if (this.lastDirection === direction) {
+        this.distance += distance;
+        return this.currentPromise ?? Promise.resolve();
+      }
+      this.finishScroll();
     }
-    const sign = delta / this.distance;
+
+    const promise = new Promise<void>((resolve) => this.currentResolve = resolve);
+    this.currentPromise = promise;
+    this.distance = distance;
+    this.scrollSign = delta < 0 ? -1 : 1;
     this.lastDirection = direction;
     this.additional = 0;
     this.scrolling = true;
-    const scrolled = () => {
-      this.scrolling = false;
-      this.directionChanged = false;
-      this.lastDirection = undefined;
-      this.distance = 0;
-      resolve?.();
-    };
-    // console.log(`scroller: delta: ${delta}, step: ${step}, distance: ${this.distance}, scrolling: ${this.scrolling}, direction: ${direction}, changed: ${this.directionChanged}`);
+    const animationID = ++this.animationID;
+    // console.log(`scroller: delta: ${delta}, step: ${step}, distance: ${this.distance}, scrolling: ${this.scrolling}, direction: ${direction}`);
     const doFrame = () => {
-      if (!this.scrolling) return scrolled();
+      if (animationID !== this.animationID) return;
+      if (!this.scrolling) return this.finishScroll();
       this.distance -= this.step + this.additional;
-      let scrollMargin = this.scrollMargin() + ((this.step + this.additional) * sign);
+      let scrollMargin = this.scrollMargin() + ((this.step + this.additional) * this.scrollSign);
       scrollMargin = Math.max(scrollMargin, 0);
       scrollMargin = Math.min(scrollMargin, this.maxScrollMargin());
       this.setScrollMargin(scrollMargin);
-      if (this.distance <= 0 || this.directionChanged || scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return scrolled();
+      this.onScrolled?.();
+      if (this.distance <= 0 || scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return this.finishScroll();
       window.requestAnimationFrame(doFrame);
     }
     window.requestAnimationFrame(doFrame);
     return promise;
+  }
+
+  stop() {
+    this.finishScroll();
+  }
+
+  private finishScroll() {
+    this.animationID++;
+    this.scrolling = false;
+    this.lastDirection = undefined;
+    this.distance = 0;
+    const resolve = this.currentResolve;
+    this.currentPromise = undefined;
+    this.currentResolve = undefined;
+    resolve?.();
   }
 }
 

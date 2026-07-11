@@ -102,11 +102,12 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     // Delay 300ms to avoid too many requests.  
     // If the user scrolls quickly through large images, it could otherwise trigger excessive requests.
     this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-      console.log("IFQ-EXECUTABLE: ", this.executableQueue);
-      Promise.all(this.executableQueue.splice(0, ADAPTER.conf.paginationIMGCount).map(imfIndex => this[imfIndex].start()))
+      const executableQueue = [...this.executableQueue];
+      console.log("IFQ-EXECUTABLE: ", executableQueue);
+      Promise.all(executableQueue.splice(0, ADAPTER.conf.paginationIMGCount).map(imfIndex => this[imfIndex].start()))
         .then(() => {
           const picked = this.cherryPick?.(this.chapterIndex);
-          this.executableQueue.filter(i => !picked || picked.picked(i)).forEach(imfIndex => this[imfIndex].start());
+          executableQueue.filter(i => !picked || picked.picked(i)).forEach(imfIndex => this[imfIndex].start());
         });
     }, 300);
   }
@@ -161,6 +162,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     if (!ret) return false;
     const threads = ADAPTER.conf.threads + ADAPTER.conf.paginationIMGCount - 1;
     const distance = Math.abs(index - this.currIndex);
+    if (ADAPTER.conf.maxPreloadDistance > 0 && distance > ADAPTER.conf.maxPreloadDistance) return false;
     if (threads >= distance || (ADAPTER.conf.threads > 0 && count < threads)) return true;
     return false;
   }

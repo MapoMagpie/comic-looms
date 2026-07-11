@@ -38,6 +38,7 @@ export type Config = {
   maxIdleThreads: number,
   /** 最大浏览时加载线程数 */
   threads: number,
+  maxPreloadDistance: number,
   /** 最大下载时加载线程数 */
   downloadThreads: number,
   /** 超时时间(秒)，默认16秒 */
@@ -154,6 +155,7 @@ export function defaultConf(): Config {
     restartIdleLoader: 2000,
     maxIdleThreads: 1,
     threads: 3,
+    maxPreloadDistance: 0,
     downloadThreads: 4,
     timeout: 10,
     version: CONF_VERSION,
@@ -366,6 +368,7 @@ export const transient = { imgSrcCSP: false, originalPolicy: "" };
 export type ConfigNumberType = "colCount"
   | "rowHeight"
   | "threads"
+  | "maxPreloadDistance"
   | "maxIdleThreads"
   | "downloadThreads"
   | "timeout"
@@ -426,6 +429,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "rowHeight", typ: "number" },
   { key: "maxIdleThreads", typ: "number" },
   { key: "threads", typ: "number" },
+  { key: "maxPreloadDistance", typ: "number" },
   { key: "downloadThreads", typ: "number" },
   { key: "paginationIMGCount", typ: "number" },
   { key: "timeout", typ: "number" },
