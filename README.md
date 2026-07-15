@@ -4,11 +4,14 @@
 
 ## Index
 
-- [Features](#features)
-- [Installation](#installation)
-- [Multi-site Support](#multi-site-support)
-- [Operates](#operates)
-- [Feedback](#feedback)
+- [Comic Looms | 中文 | 한글 | Spanish](#comic-looms--中文--한글--spanish)
+  - [Index](#index)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Multi-site Support](#multi-site-support)
+  - [Operates](#operates)
+  - [Contributing](#contributing)
+  - [Feedback](#feedback)
 
 Preview (if you can't see the image, click [here](./.assets/preview.md)):
 ![Preview](./.assets/eh-view-enhance-showcase4.avif 'Preview')
@@ -84,9 +87,21 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 1. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
 1. More information can be found in `CONF` -> `Help` or [here](./.assets/HELP.md)
 
-## <a name="feedback">Feedback</a>
+## <a name="contributing">Contributing</a>
 
-If you want to add support for certain sites, please refer to [this guide](./.assets/CONTRIBUTING.md)
+If you want to add support for certain sites, refer to the [contributing guide](CONTRIBUTING.md).
+
+> [!NOTE]
+> For guidance on contributing, debugging and common mistakes, please also refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+>
+> Along with its assisting documents for deeper architecture notes and internal flow, [CONTRIBUTING_ARCHITECTURE.md](.assets/CONTRIBUTING_ARCHITECTURE.md).
+>
+> For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md).
+
+> [!TIP]
+> For a template file for creating new matchers, check out [template-example.ts](src/platform/matchers/template-example.ts).
+
+## <a name="feedback">Feedback</a>
 
 If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/comic-looms/issues
 
