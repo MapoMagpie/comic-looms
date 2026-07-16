@@ -239,8 +239,8 @@ class PawchiveMatcher extends BaseMatcher<PawchiveResult[]> {
 ADAPTER.addSetup({
   name: "pawchive",
   workURLs: [
-    /pawchive.st\/\w+\/user\/\w+(\/post\/\w+)?(\?\w=.*)?$/
+    /pawchive.pw\/\w+\/user\/\w+(\/post\/\w+)?(\?\w=.*)?$/
   ],
-  match: ["https://pawchive.st/*"],
+  match: ["https://pawchive.pw/*"],
   constructor: () => new PawchiveMatcher(),
 });
