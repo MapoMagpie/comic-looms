@@ -379,6 +379,71 @@ class ATFMatcher extends DanbooruMatcher {
   }
 }
 
+class Rule34USMatcher extends DanbooruMatcher {
+  nextPage(doc: Document): string | null {
+    let href = doc.querySelector<HTMLAnchorElement>(".pagination a[alt=next]")?.href;
+    if (!href) {
+      href = doc.querySelector<HTMLAnchorElement>(".pagination b + a")?.href;
+    }
+    return href ?? null;
+  }
+  getOriginalURL(doc: Document): string | null {
+    return this.getNormalURL(doc);
+  }
+  getNormalURL(doc: Document): string | null {
+    const videoSource = doc.querySelector<HTMLSourceElement>(".container .content_push video source");
+    if (videoSource) {
+      return videoSource.src;
+    }
+    return doc.querySelector<HTMLImageElement>(".container .content_push img")?.src ?? null;
+  }
+  extractIDFromHref(href: string): string | undefined {
+    return href.match(/id=(\d+)/)?.[1];
+  }
+  getBlacklist(): string[] {
+    return [];
+  }
+  queryList(doc: Document): HTMLElement[] {
+    return Array.from(doc.querySelectorAll(".thumbail-container > div > a"));
+  }
+  toImgNode(ele: HTMLElement): [ImageNode | null, string] {
+    const elem = ele as HTMLAnchorElement;
+    const imgElem = elem.querySelector<HTMLImageElement>("img");
+    if (!imgElem) return [null, ""];
+    const href = elem.href;
+    const thumb = imgElem.src;
+    const tags = imgElem.title;
+    const node = new ImageNode(thumb, href, elem.id + ".jpg")
+    if (/\bvideo\b/.test(tags)) {
+      node.mimeType = "video/mp4";
+    }
+    const id = href.match(/id=(\d+)/)?.[1];
+    if (id) {
+      if (/r=favorites/.test(window.location.href)) {
+        const delFav = new NodeAction("X", "Delete to favorites", async () => {
+          await fetch(`${window.location.origin}/index.php?r=favorites/delete&id=${id}`);
+        });
+        node.actions.push(delFav);
+      } else {
+        const addFav = new NodeAction("♥", "Add to favorites", async () => {
+          fetch(`${window.location.origin}/index.php?r=posts/vote&id=${id}&type=up`);
+          const resp = await fetch(`${window.location.origin}/index.php?r=favorites/create&id=${id}`).then(resp => resp.text());
+          if (resp === "2") {
+            EBUS.emit("notify-message", "error", "You are not logged in");
+            throw new Error("You are not logged in");
+          }
+        });
+        node.actions.push(addFav);
+      }
+    }
+    return [node, tags];
+  }
+  site(): string {
+    return "Rule34US";
+  }
+
+}
+
 ADAPTER.addSetup({
   name: "e621",
   workURLs: [
@@ -395,6 +460,16 @@ ADAPTER.addSetup({
   ],
   match: ["https://rule34.xxx/*"],
   constructor: () => new Rule34Matcher(),
+});
+
+ADAPTER.addSetup({
+  name: "rule34.US",
+  workURLs: [
+    /rule34.us\/index.php\?r=posts\/index/,
+    /rule34.us\/index.php\?r=favorites\/view/,
+  ],
+  match: ["https://rule34.us/*"],
+  constructor: () => new Rule34USMatcher(),
 });
 
 ADAPTER.addSetup({
