@@ -98,9 +98,6 @@ If you want to add support for certain sites, refer to the [contributing guide](
 >
 > For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md).
 
-> [!TIP]
-> For a template file for creating new matchers, check out [template-example.ts](src/platform/matchers/template-example.ts).
-
 ## <a name="feedback">Feedback</a>
 
 If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/comic-looms/issues

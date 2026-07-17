@@ -7,9 +7,6 @@ This document explains how to add new site support, fix bugs, and extend functio
 >
 > For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md).
 
-> [!TIP]
-> For a template file for creating new matchers, check out [template-example.ts](src/platform/matchers/template-example.ts).
-
 ## Table of Contents
 
 - [Contributing to Comic Looms](#contributing-to-comic-looms)
@@ -568,7 +565,7 @@ The repository contains internal documentation and localized guides.
 
 > [!NOTE]
 > For deeper architecture notes and internal flow, please see [CONTRIBUTING_ARCHITECTURE.md](.assets/CONTRIBUTING_ARCHITECTURE.md).
-> For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md). For a template file for matcher, check out [src/platform/matchers/template-example.ts](src/platform/matchers/template-example.ts).
+> For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md).
 
 <details>
 <summary>Existing matchers which are useful references for complex cases</summary>
