@@ -3,15 +3,12 @@
 **This Userscript enables quick and convenient browsing of galleries or artists' homepage on [certain sites](#multi-site-support), with batch download support, focusing on browsing experience and low site load.**
 
 ## Index
-
-- [Comic Looms | 中文 | 한글 | Spanish](#comic-looms--中文--한글--spanish)
-  - [Index](#index)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Multi-site Support](#multi-site-support)
-  - [Operates](#operates)
-  - [Contributing](#contributing)
-  - [Feedback](#feedback)
+- [Features](#features)
+- [Installation](#installation)
+- [Multi-site Support](#multi-site-support)
+- [Operates](#operates)
+- [Contributing](#contributing)
+- [Feedback](#feedback)
 
 Preview (if you can't see the image, click [here](./.assets/preview.md)):
 ![Preview](./.assets/eh-view-enhance-showcase4.avif 'Preview')
