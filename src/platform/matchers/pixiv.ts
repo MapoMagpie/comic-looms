@@ -229,7 +229,7 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
   constructor() {
     super();
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
-    if (/pixiv.net(\/en\/?|\/illustration)?$/.test(window.location.href)) {
+    if (/pixiv.net(\/(en\/?|\/illustration)|\/)?$/.test(window.location.href)) {
       this.api = new PixivHomeAPI();
     } else {
       this.api = new PixivArtistWorksAPI();
