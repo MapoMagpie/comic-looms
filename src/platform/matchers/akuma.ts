@@ -89,5 +89,6 @@ ADAPTER.addSetup({
     /akuma.moe\/g\/\w+\/?$/
   ],
   match: ["https://akuma.moe/*"],
+  preloadAllPages: true,
   constructor: () => new AkumaMatcher(),
 });

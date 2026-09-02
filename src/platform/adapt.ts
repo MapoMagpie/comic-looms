@@ -2,9 +2,15 @@ import { Config, getConf, getSiteConfig, SiteConfig } from "../config";
 import { Matcher } from "./platform";
 
 export type MatcherSetup = {
+  // The name shown in the site profiles UI.
   name: string,
+  // URLs on which this script should take effect.
   workURLs: RegExp[],
+  // Unused; normally, you can just set it to the site's domain.
   match?: string[],
+  // This site's gallery has a finite number of pages, usually fewer than 100,
+  // so we can load all pages one by one without waiting for scroll-triggered lazy loading.
+  preloadAllPages?: boolean,
   constructor: () => Matcher<any>,
 }
 

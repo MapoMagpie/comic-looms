@@ -127,7 +127,7 @@ export class PageFetcher {
     // Image Actions, It is an experimental feature.
     try {
       if (ADAPTER.conf.imgNodeActions.length > 0) {
-        const AsyncFunction = async function () { }.constructor;
+        const AsyncFunction = async function() { }.constructor;
         this.nodeActionDesc = ADAPTER.conf.imgNodeActions.filter(a => {
           // if workon is empty, means work on all site.
           if (!a.workon) return true;
@@ -208,7 +208,7 @@ export class PageFetcher {
    */
   private async appendPages(appendedCount: number) {
     while (true) {
-      if (appendedCount + 60 < this.queue.length) break;
+      if (appendedCount + 60 < this.queue.length && !ADAPTER.matcher?.preloadAllPages) break;
       if (!await this.appendNextPage()) break;
     }
   }

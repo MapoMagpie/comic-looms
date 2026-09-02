@@ -131,5 +131,6 @@ ADAPTER.addSetup({
     /(wnacg.com|wn\d{2}.(cc|ru))\/photos-index/
   ],
   match: ["https://www.wnacg.com/*"],
+  preloadAllPages: true,
   constructor: () => new WnacgMatcher(),
 });

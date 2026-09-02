@@ -421,5 +421,6 @@ ADAPTER.addSetup({
   workURLs: [
     regulars.workURL,
   ],
+  preloadAllPages: true,
   constructor: () => new EHMatcher(),
 });
