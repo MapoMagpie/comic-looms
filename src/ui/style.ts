@@ -470,11 +470,19 @@ export function styleCSS() {
 .chapter-list {
   height: 100%;
   width: 100%;
+  overflow: hidden; /* scrolling is delegated to #chapter-list-container, keeping the search bar pinned at the bottom */
+  border-left: 2px solid black;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+#chapter-list-container {
+  flex: 1;
+  min-height: 0; /* key: allow the flex child to shrink, otherwise a long list pushes the search bar out of the parent */
   overflow: hidden auto;
   scrollbar-width: none;
-  border-left: 2px solid black;
 }
-.chapter-list::-webkit-scrollbar {
+#chapter-list-container::-webkit-scrollbar {
   display: none;
 }
 .chapter-list-item {
@@ -490,6 +498,26 @@ export function styleCSS() {
 .chapter-list-item-hl {
   filter: brightness(150%);
   background-color: #84c5ff6b;
+}
+.chapter-list-item-empty {
+  text-decoration: none;
+  color: #999;
+}
+.chapter-list-search {
+  padding-left: 0.7em;
+  padding-right: 0.7em;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  flex-shrink: 0; /* the search bar must not be compressed */
+}
+.chapter-list-search > input {
+  flex: 1;
+  min-width: 0;
+}
+.chapter-list-search > button {
+  padding: 0 0.5em;
+  cursor: pointer;
 }
 .p-chapters {
   width: 34em;

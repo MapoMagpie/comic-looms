@@ -2,6 +2,7 @@ import EBUS from "../event-bus";
 import { DEFAULT_THUMBNAIL } from "../img-node";
 import { Chapter } from "../page-fetcher";
 import q from "../utils/query-element";
+import { matchesSearch, parsePageTerm } from "../utils/search-normalize";
 
 export class ChaptersPanel {
 
@@ -11,6 +12,11 @@ export class ChaptersPanel {
   thumbnailImg: HTMLImageElement;
   thumbnailCanvas: HTMLCanvasElement;
   listContainer: HTMLElement;
+  listSearch: HTMLInputElement;
+  listSearchPrev: HTMLButtonElement;
+  listSearchNext: HTMLButtonElement;
+  listSearchClear: HTMLButtonElement;
+  chapters?: Chapter[];
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -18,10 +24,26 @@ export class ChaptersPanel {
     this.thumbnail = q("#chapter-thumbnail", root);
     this.thumbnailImg = q("#chapter-thumbnail-image", root);
     this.thumbnailCanvas = q("#chapter-thumbnail-canvas", root);
-    this.listContainer = q("#chapter-list", root);
+    this.listContainer = q("#chapter-list-container", root);
+    this.listSearch = q("#chapter-list-search > input", root);
+    this.listSearchPrev = q("#chapter-list-prev", root);
+    this.listSearchNext = q("#chapter-list-next", root);
+    this.listSearchClear = q("#chapter-list-clear", root);
+    this.listSearch.addEventListener("input", () => this.search(this.listSearch.value))
+    this.listSearchPrev.addEventListener("click", () => {
+      const page = parsePageTerm(this.listSearch.value);
+      // Non-pagination terms fall back to %1; stay at %1 when already there (%0 is an invalid page)
+      this.applySearch("%" + (page === null ? 1 : Math.max(1, page - 1)));
+    });
+    this.listSearchNext.addEventListener("click", () => {
+      const page = parsePageTerm(this.listSearch.value);
+      this.applySearch("%" + (page === null ? 1 : page + 1));
+    });
+    this.listSearchClear.addEventListener("click", () => this.applySearch(""));
 
     EBUS.subscribe("pf-update-chapters", (chapters, slient) => {
-      this.updateChapterList(chapters);
+      this.chapters = chapters;
+      this.updateChapterList();
       if (chapters.length > 1 && !slient) {
         this.relocateToCenter();
       }
@@ -29,10 +51,36 @@ export class ChaptersPanel {
     EBUS.subscribe("pf-change-chapter", (index, chapter) => this.updateHighlight(index, chapter));
   }
 
-  updateChapterList(chapters: Chapter[]) {
-    const ul = this.listContainer.firstElementChild as HTMLElement;
+  search(term?: string) {
+    this.updateChapterList(term);
+  }
+
+  /** Write the term into the input and refresh the list (programmatic assignment does not fire the input event, so refresh manually) */
+  private applySearch(term: string) {
+    this.listSearch.value = term;
+    this.updateChapterList(term);
+  }
+
+  updateChapterList(term?: string) {
+    const ul = this.listContainer;
     ul.innerHTML = "";
-    chapters.forEach((ch, i) => {
+    if (!this.chapters || this.chapters.length === 0) return;
+    const query = term?.trim();
+    // Special pagination term: of the form %2 (% followed by digits), filters by the i range, 10 items per page.
+    // Page numbers start at 1: %1 is page 1 (i=0~9), %2 is page 2 (i=10~19).
+    // A lone % does not match ^%\d+$ and falls through to normal matching.
+    const page = parsePageTerm(query ?? "");
+    const pageFrom = page !== null ? (page - 1) * 10 : -1;
+    const pageTo = pageFrom >= 0 ? pageFrom + 10 : -1;
+    let firstVisible: Chapter | undefined;
+    this.chapters.forEach((ch, i) => {
+      if (page !== null) {
+        if (i < pageFrom || i >= pageTo) return;
+      } else {
+        const titles = ch.title instanceof Array ? ch.title : [ch.title];
+        if (query && !titles.some((t) => matchesSearch(t, query))) return;
+      }
+      firstVisible ??= ch;
       const li = document.createElement("div");
       let title = "";
       if (ch.title instanceof Array) {
@@ -54,7 +102,13 @@ export class ChaptersPanel {
       li.addEventListener("mouseenter", () => this.updateChapterThumbnail(ch))
       ul.appendChild(li);
     });
-    this.updateChapterThumbnail(chapters[0]);
+    if (!firstVisible) {
+      const li = document.createElement("div");
+      li.classList.add("chapter-list-item", "chapter-list-item-empty");
+      li.textContent = "No matching chapters";
+      ul.appendChild(li);
+    }
+    this.updateChapterThumbnail(firstVisible ?? this.chapters[0]);
   }
 
   relocateToCenter() {
@@ -119,7 +173,13 @@ export class ChaptersPanel {
       <canvas id="chapter-thumbnail-canvas" width="100" height="100"></canvas>
     </div>
     <div id="chapter-list" class="chapter-list">
-      <div></div>
+      <div id="chapter-list-container"></div>
+      <div id="chapter-list-search" class="chapter-list-search">
+        <input type="text" placeholder="Search chapters..." />
+        <button id="chapter-list-prev" class="ehvp-custom-btn" title="prev">◀</button>
+        <button id="chapter-list-next" class="ehvp-custom-btn" title="next">▶</button>
+        <button id="chapter-list-clear" class="ehvp-custom-btn" title="clear">×</button>
+      </div>
     </div>
 </div>`;
   }
