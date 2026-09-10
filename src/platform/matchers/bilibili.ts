@@ -2,9 +2,10 @@ import ImageNode from "../../img-node";
 import { simpleFetch } from "../../utils/query";
 import { transactionId } from "../../utils/random";
 import { sleep } from "../../utils/sleep";
-import { ADAPTER } from "../adapt";
+// import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform"
 
+// @ts-ignore
 class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
 
   async *fetchPagesSource(): AsyncGenerator<Result<BiliBiliOpusItem[]>> {
@@ -221,11 +222,12 @@ type BilibiliOPUSDetail = {
 //   ttl: number,
 //   data?: { item: BilibiliOPUSDetail },
 // }
-ADAPTER.addSetup({
-  name: "Bilibili",
-  workURLs: [
-    /space.bilibili.com\/\d+\/upload\/opus$/
-  ],
-  match: ["https://www.bilibili.com/*"],
-  constructor: () => new BilibiliMatcher(),
-});
+// Disable bilibili
+// ADAPTER.addSetup({
+//   name: "Bilibili",
+//   workURLs: [
+//     /space.bilibili.com\/\d+\/upload\/opus$/
+//   ],
+//   match: ["https://www.bilibili.com/*"],
+//   constructor: () => new BilibiliMatcher(),
+// });
