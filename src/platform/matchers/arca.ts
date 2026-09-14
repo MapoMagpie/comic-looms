@@ -42,7 +42,7 @@ class ArcaMatcher extends BaseMatcher<Document> {
     return nodes;
   }
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    return { url: node.href };
+    return { url: ADAPTER.conf.fetchOriginal ? node.href : node.thumbnailSrc };
   }
 }
 ADAPTER.addSetup({
