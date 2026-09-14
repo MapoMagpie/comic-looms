@@ -62,6 +62,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [mangacopy.com](https://www.mangacopy.com) | [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
+- [kone.gg](https://kone.gg)
 - [akuma.moe](https://akuma.moe)
 - [colamanga.com](https://www.colamanga.com) (suspend)
 - [yabai.si](https://yabai.si)
