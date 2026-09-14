@@ -27,14 +27,18 @@ class ArcaMatcher extends BaseMatcher<Document> {
         }
       } else if (element.tagName.toLowerCase() === 'video') {
         const video = element as HTMLVideoElement;
-        if (video.src) {
-          const src = video.src;
-          const href = new URL(src);
-          const ext = href.pathname.split('.').pop();
-          href.searchParams.set('type', 'orig');
+        const preview = video.src || video.getAttribute('data-originalurl') || '';
+        if (preview) {
+          const ext = new URL(preview).pathname.split('.').pop() ?? 'mp4';
+          const original = video.getAttribute('data-originalurl') ?? (() => {
+            const url = new URL(preview);
+            url.searchParams.set('type', 'orig');
+            return url.href;
+          })();
           const title = (i + 1).toString().padStart(digits, '0') + '.' + ext;
-          const poster = video.poster || '';
-          nodes.push(new ImageNode(poster, href.href, title, undefined, href.href));
+          const node = new ImageNode(video.poster || '', original, title, undefined, preview);
+          node.mimeType = 'video/' + ext;
+          nodes.push(node);
         }
       }
     });
@@ -42,6 +46,9 @@ class ArcaMatcher extends BaseMatcher<Document> {
     return nodes;
   }
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    if (node.mimeType?.startsWith('video')) {
+      return { url: ADAPTER.conf.fetchOriginal ? node.href : node.originSrc! };
+    }
     return { url: ADAPTER.conf.fetchOriginal ? node.href : node.thumbnailSrc };
   }
 }
