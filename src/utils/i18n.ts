@@ -416,18 +416,6 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'Pixiv의 기본 이미지 서버 i.pximg.net을(를) 지정한 프록시 서버(예: i.pixiv.re)로 교체하여 더 빠른 로딩 속도를 얻으세요.',
     'Reemplaza el servidor de imágenes predeterminado de Pixiv, i.pximg.net, por el servidor proxy que especifiques, como i.pixiv.re, para obtener una velocidad de carga mejor.',
   ],
-  pixivUgoiraMode: [
-    "Pixiv Ugoira Mode",
-    "Pixiv 动图模式",
-    "Pixiv 우고이라 모드",
-    "Pixiv Ugoira Modo",
-  ],
-  pixivUgoiraModeTooltip: [
-    "Processing Ugoira Files<br> Ugoira Mode: This mode offers the fastest processing speed and the lowest memory usage, allowing for quick playback. The Ugoira file is downloaded as a sequence of individual image frames. A one-click script is included to convert this image sequence into a GIF.<br> GIF/MP4 Mode: This mode uses ffmpeg.wasm to encode the Ugoira into a common video or GIF format. The conversion is done directly in your browser, but it is slower and has a higher memory footprint.",
-    "如何处理Pixiv的Ugoira<br>  模式Ugoira: 处理速度快且占用低，可快速开始播放，但下载后将保存每一帧图片到文件夹，同时提供一个一键转换脚本，将图片序列转换为GIF。<br>  模式GIF和MP4：将使用ffmpeg.wasm直接将ugoira转换为可直接播放的格式，但转换速度慢占用高。",
-    "Ugoira 처리 방법<br> Ugoira 모드: 이 방식은 처리 속도가 가장 빠르고 메모리 사용량이 최소화되어 즉시 재생할 수 있습니다. Ugoira 파일을 개별 이미지 프레임의 묶음으로 다운로드합니다. 해당 이미지들을 GIF로 한 번에 변환해 주는 스크립트가 함께 제공됩니다.<br> GIF/MP4 모드: ffmpeg.wasm으로 Ugoira를 GIF나 MP4 같은 일반 동영상 형식으로 변환합니다. 브라우저에서 직접 변환하지만, 속도가 느리고 시스템 자원을 많이 사용합니다.",
-    "Procesamiento de archivos Ugoira<br> Modo Ugoira: Este modo ofrece la velocidad de procesamiento más rápida y el uso de memoria más bajo, lo que permite una reproducción rápida. El archivo Ugoira se descarga como una secuencia de fotogramas de imagen individuales. Se incluye un script de un solo clic para convertir esta secuencia de imágenes en un GIF.<br> Modo GIF/MP4: Este modo utiliza ffmpeg.wasm para codificar el Ugoira en un formato de video o GIF común. La conversión se realiza directamente en su navegador, pero es más lenta y tiene una mayor huella de memoria.",
-  ],
   // config panel select option
   readMode: [
     'Read Mode',

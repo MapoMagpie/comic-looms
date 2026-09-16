@@ -16,8 +16,6 @@
     "vite-plugin-monkey": "^8.0.6"
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
     "@zip.js/zip.js": "^2.7.52",
     "file-saver": "^2.0.5",
     "pica": "^9.0.1"

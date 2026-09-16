@@ -1,7 +1,6 @@
 import { GalleryMeta } from "../../download/gallery-meta";
 import { evLog } from "../../utils/ev-log";
 import { BaseMatcher, OriginMeta, Result, SubData } from "../platform";
-import { FFmpegConvertor } from "../../utils/ffmpeg";
 import ImageNode, { NodeAction } from "../../img-node";
 import * as zip_js from "@zip.js/zip.js";
 import { batchFetch } from "../../utils/query";
@@ -222,7 +221,6 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
   pageCount: number = 0;
   works: Record<string, Work> = {};
   ugoiraMetas: Record<string, UgoiraMeta> = {};
-  convertor?: FFmpegConvertor;
   csrfToken?: string;
   pidDatas: Map<string, PageData | Error> = new Map();
 
@@ -240,7 +238,6 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
     const meta = this.ugoiraMetas[node.originSrc!];
     if (!meta) return [data, contentType];
     const zipReader = new zip_js.ZipReader(new zip_js.Uint8ArrayReader(data));
-    if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
     const promises = await zipReader.getEntries()
       .then(
         entries => {
@@ -257,19 +254,12 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
     if (files.length !== meta.body.frames.length) {
       throw new Error("unpack ugoira file error: file count not equal to meta");
     }
-
-    if (ADAPTER.conf.pixivUgoiraMode === "ugoira") {
-      const mimeType = meta.body.mime_type;
-      const list = files.map(f => ({ name: f.name, data: f.data, contentType: mimeType }));
-      const metaStr = meta.body.frames.map(m => `file '${m.file}'\nduration ${m.delay / 1000}`).join('\n');
-      const metaStrRaw = new TextEncoder().encode(metaStr);
-      list.unshift({ name: "frames.txt", contentType: "text/plain", data: metaStrRaw });
-      return [new SubData(node.title, list, meta.body.frames), "ugoira/ugoira"];
-    } else {
-      const format = ADAPTER.conf.pixivUgoiraMode === "gif" ? "GIF" : "MP4";
-      const blob = await this.convertor.convertTo(files, format, meta.body.frames);
-      return blob.arrayBuffer().then(buf => [new Uint8Array(buf), blob.type]);
-    }
+    const mimeType = meta.body.mime_type;
+    const list = files.map(f => ({ name: f.name, data: f.data, contentType: mimeType }));
+    const metaStr = meta.body.frames.map(m => `file '${m.file}'\nduration ${m.delay / 1000}`).join('\n');
+    const metaStrRaw = new TextEncoder().encode(metaStr);
+    list.unshift({ name: "frames.txt", contentType: "text/plain", data: metaStrRaw });
+    return [new SubData(node.title, list, meta.body.frames), "ugoira/ugoira"];
   }
 
   galleryMeta(): GalleryMeta {

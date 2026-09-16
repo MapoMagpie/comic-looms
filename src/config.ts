@@ -122,8 +122,6 @@ export type Config = {
   pixivRecordReading: boolean,
   /** the aritst's works order, ascend true means old first */
   pixivAscendWorks: boolean,
-  /** how to process ugoira */
-  pixivUgoiraMode: "ugoira" | "gif" | "mp4";
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
   dragImageOut: boolean,
   excludeVideo: boolean,
@@ -198,7 +196,6 @@ export function defaultConf(): Config {
     recordReadingProgress: false,
     pixivRecordReading: false,
     pixivAscendWorks: false,
-    pixivUgoiraMode: "ugoira",
     pixivMirrorHost: "",
     filenameOrder: "auto",
     dragImageOut: false,
@@ -402,7 +399,6 @@ export type ConfigSelectType = "readMode"
   | "hitomiFormat"
   | "ehentaiTitlePrefer"
   | "filenameOrder"
-  | "pixivUgoiraMode"
   ;
 export type ConfigTextType = "pixivMirrorHost"
   | "ehentaiMirrorHost"
@@ -483,13 +479,6 @@ export const ConfigItems: ConfigItem[] = [
       { value: "webp", display: "Webp" },
       { value: "jxl", display: "Jxl" },
     ], displayInSite: /hitomi.la\//
-  },
-  {
-    key: "pixivUgoiraMode", typ: "select", options: [
-      { value: "ugoira", display: "Ugoira" },
-      { value: "gif", display: "GIF" },
-      { value: "mp4", display: "MP4" },
-    ], displayInSite: /pixiv.net/
   },
   {
     key: "ehentaiTitlePrefer", typ: "select", options: [
