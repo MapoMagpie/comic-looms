@@ -156,7 +156,7 @@ dirs=$(find . -maxdepth 1 -type d -name "*ugoira*")
 for dir in $dirs; do
     out=$(basename "$dir")
     out=$\{out/_ugoira0/\}
-    ffmpeg -f concat -safe 0 -i "$dir/frames.txt" -filter_complex "[0:v]split[x][z];[z]palettegen[p];[x][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 -y "$out"
+    ffmpeg -f concat -safe 0 -i "$dir/frames.txt" -filter_complex "[0:v]format=rgb24,split[x][z];[z]palettegen[p];[x][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 -y "$out.gif" 2>&1 | grep -v "deprecated pixel format"
     if [ $? -eq 0 ]; then
         echo "Converted $out.gif"
         rm -rf "$dir"
@@ -182,7 +182,7 @@ for /d %%D in (*ugoira*) do (
     set "out=!out:_ugoira0=!"
     echo Processing "!dir!"...
     REM Run ffmpeg to generate the animated GIF
-    ffmpeg -f concat -safe 0 -i "!dir!\\frames.txt" -filter_complex "[0:v]split[x][z];[z]palettegen[p];[x][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 -y "!out!.gif"
+    ffmpeg -f concat -safe 0 -i "!dir!\\frames.txt" -filter_complex "[0:v]format=rgb24,split[x][z];[z]palettegen[p];[x][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 -y "!out!.gif" 2>&1 | findstr /V "deprecated pixel format"
     REM Check if the ffmpeg command succeeded
     if !errorlevel! == 0 (
         echo Successfully converted: !out!.gif

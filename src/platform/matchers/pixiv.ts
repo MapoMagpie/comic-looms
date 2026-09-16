@@ -214,7 +214,7 @@ class PixivArtistWorksAPI implements PixivAPI {
   }
 }
 
-const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
+const PID_EXTRACT = /\/(\d+)[-_\w]*\.\w+$/;
 type PageData = { error: boolean, message: string, body: Page[] };
 class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
   api: PixivAPI;
@@ -416,7 +416,7 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     const matches = node.originSrc!.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
-      return { url: node.originSrc! }; // cannot extract pid, should throw an error
+      throw new Error("cannot match pid from img src: " + node.originSrc);
     }
     const pid = matches[1];
     const p = matches[2];
