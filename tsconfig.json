@@ -7,7 +7,7 @@
       "ESNext",
       "DOM"
     ],
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "strict": true,
     "sourceMap": true,
     "resolveJsonModule": true,
@@ -20,6 +20,10 @@
     "skipLibCheck": true
   },
   "include": [
-    "src"
+    "src",
+    "plugins",
+    "vite.config.ts",
+    "userscript.meta.ts",
+    "userscript.icon.ts"
   ]
 }

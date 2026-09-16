@@ -56,6 +56,15 @@ This guide is structured so you can quickly jump to the part you need:
 - Inspect matcher flow: read [Section 2.1, Platform Adapter Architecture](#21-platform-adapter-architecture) and [Section 2.2, Required Matcher Methods](#22-required-matcher-methods) plus the architecture companion in [`CONTRIBUTING_ARCHITECTURE.md`](CONTRIBUTING_ARCHITECTURE.md) to see how adapters and matchers map URLs to page sources and image nodes.
 - Update UI: start with [Section 3.2, Troubleshooting Strategy](#32-troubleshooting-strategy) and the files under [`src/ui/`](src/ui/) to learn where the UI consumes fetch and page data and where to make UI changes.
 
+### Build and development
+
+- `npm install` — install dependencies.
+- `npm run build` — type-check and build `dist/comic-looms.user.js` plus `dist/comic-looms.meta.js`.
+- `npm run dev` — serve the project root on `http://localhost:8080` (like `miniserve .`) and rebuild on every source change. Install the script once from `http://localhost:8080/dist/comic-looms.user.js`; the userscript manager reinstalls each new build. Failed builds leave `dist/` untouched, so the installed script keeps working. Set `PORT` to change the port.
+- `npm run preview` — serve `dist/` locally (e.g. to install the userscript from `http://localhost:4173/comic-looms.user.js`).
+
+The userscript version lives in [`userscript.meta.ts`](userscript.meta.ts) (`VERSION`); it is used both for the `@version` metadata line and for the `_VERSION_` define. The metadata block itself is written as plain text in the same file.
+
 ## Beginner Contributor Path
 
 If you are new to Comic Looms or matcher development, follow these simple steps:

@@ -1,4 +1,4 @@
-import { GM, GmResponseType, GmResponseTypeMap, GmXmlhttpRequestOption, } from "$";
+import { GM } from "../gm";
 
 type Option<T extends GmResponseType> = GmXmlhttpRequestOption<T, GmResponseTypeMap[GmResponseType]>;
 

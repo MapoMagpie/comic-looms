@@ -1,4 +1,4 @@
-import { GM_getValue, GM_setValue } from "$";
+import { GM_getValue, GM_setValue } from "./gm";
 import { AppEventIDInBigImgFrame, AppEventIDInFullViewGrid, AppEventIDInMain } from "./ui/event";
 import { i18n } from "./utils/i18n";
 import { b64EncodeUnicode, uuid } from "./utils/random";

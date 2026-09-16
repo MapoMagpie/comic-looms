@@ -40,6 +40,10 @@ comic-looms/
 │   │                                    #    - Persistence (GM_getValue/GM_setValue or localStorage)
 │   │                                    #    - Schema validation & migration
 │   │
+│   ├── gm.ts                          #  Runtime access to the userscript manager API
+│   │                                    #    - GM / GM_getValue / GM_setValue
+│   │                                    #    - Types: src/types/gm.d.ts
+│   │
 │   ├── event-bus.ts                   # Central event bus (EBUS)
 │   │                                    #    - Pub-sub pattern for cross-module communication
 │   │                                    #    - Types: ifq-do, start-download, toggle-main-view, etc.
@@ -224,11 +228,25 @@ comic-looms/
 ├── flake.nix                          #  Nix configuration
 ├── package-lock.json
 ├── package.json                       #  Dependencies & npm scripts
+├── plugins/
+│   └── userscript.ts                  #  Local Vite plugin: userscript build
+│                                             #    - Prepends the metadata block to the bundle
+│                                             #    - Emits comic-looms.meta.js
+│
+├── scripts/
+│   └── dev.mjs                        #  Dev server + rebuild watcher
+│                                             #    - Serves the project root (like `miniserve .`)
+│                                             #    - Builds into dist/.dev and swaps dist/ only on success
+│
+├── src/types/
+│   └── gm.d.ts                        #  GM API typings (vendored from vite-plugin-monkey, MIT)
+│
 ├── tsconfig.json                      #  TypeScript configuration
+├── userscript.icon.ts                 #  Userscript icon (base64 data URI)
+├── userscript.meta.ts                 #  Userscript metadata + VERSION (single source of truth)
 ├── vite-env.d.ts
 └── vite.config.ts                     #  Build configuration
-                                              #    - Vite + vite-plugin-monkey
-                                              #    - FFmpeg worker embedding
-                                              #    - CDN dependencies
-                                              #    - Userscript metadata
+                                              #    - Vite
+                                              #    - CDN dependencies (@require + globals)
+                                              #    - Userscript metadata (userscript.meta.ts)
 ```
