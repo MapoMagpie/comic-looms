@@ -32,7 +32,7 @@ export function createHTML(filter: Filter) {
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
 <div id="message-box" class="ehvp-message-box"></div>
-<div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
+<div id="full-view-grid" class="full-view-grid" tabindex="6"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land img-land-left"></a>
    <a id="img-land-right" class="img-land img-land-right"></a>
@@ -102,7 +102,7 @@ export function createHTML(filter: Filter) {
   shadowRoot.append(root);
   return {
     root,
-    fullViewGrid: q("#ehvp-nodes-container", root),
+    fullViewGrid: q("#full-view-grid", root),
     bigImageFrame: q("#big-img-frame", root),
     pageHelper: q("#p-helper", root),
     configPanelBTN: q("#config-panel-btn", root),
