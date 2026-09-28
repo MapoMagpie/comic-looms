@@ -22,8 +22,44 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
   baseURL?: string;
   galleryURL?: string;
 
-  async *fetchPagesSource(): AsyncGenerator<Result<GalleryImage[]>> {
+  /** A series page has no image of its own, it lists chapters and each chapter is a normal album.
+   *  The chapter list is paginated, 12 chapters per page. Its order and layout follow the viewer's
+   *  cookie preference, so request it with explicit query params to always get the ascending list. */
+  async *fetchChapters(): AsyncGenerator<Chapter[], Chapter[], Chapter[]> {
+    if (!document.querySelector("#sr_pub")) {
+      return [new Chapter(0, "Default", window.location.href)];
+    }
     const id = this.extractIDFromHref(window.location.href);
+    if (!id) {
+      throw new Error("Cannot find series ID");
+    }
+    const chapters: Chapter[] = [];
+    const seen = new Set<string>();
+    let cover: string | undefined;
+    for (let page = 1; ; page++) {
+      const doc = await this.requestDocument(`${window.location.origin}/photos-index-aid-${id}-page-${page}.html?order=asc&mode=list`);
+      if (page === 1) {
+        this.meta = this.pasrseGalleryMeta(doc);
+        const coverSrc = doc.querySelector<HTMLImageElement>(".asTBcell.uwthumb img")?.getAttribute("src");
+        if (coverSrc) cover = this.toAbsoluteURL(coverSrc);
+      }
+      let added = 0;
+      doc.querySelectorAll<HTMLAnchorElement>(".sr_compact a[data-chid]").forEach((ele) => {
+        const chid = ele.getAttribute("data-chid")!;
+        if (seen.has(chid)) return;
+        seen.add(chid);
+        added++;
+        const title = ele.textContent?.trim() || chid;
+        chapters.push(new Chapter(chapters.length, title, `${window.location.origin}/photos-index-aid-${chid}.html`, cover));
+      });
+      if (added === 0 || !doc.querySelector(".bot_toolbar .paginator .next")) break;
+    }
+    if (chapters.length === 0) throw new Error("Cannot find any chapter in this series");
+    return chapters;
+  }
+
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<GalleryImage[]>> {
+    const id = this.extractIDFromHref(chapter.source);
     if (!id) {
       throw new Error("Cannot find gallery ID");
     }
@@ -32,7 +68,7 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
 
     // The first album index page is also the page holding the gallery meta.
     let indexDoc = await this.requestDocument(this.baseURL);
-    this.meta = this.pasrseGalleryMeta(indexDoc);
+    chapter.meta = this.pasrseGalleryMeta(indexDoc);
 
     // The gallery page only provides the large image urls
     const imageList = await this.requestGalleryImages(this.galleryURL);
@@ -85,12 +121,18 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
   }
 
   galleryMeta(chapter: Chapter): GalleryMeta {
-    return this.meta || super.galleryMeta(chapter);
+    return chapter.meta || this.meta || super.galleryMeta(chapter);
+  }
+
+  /** Name a series after itself rather than after its first chapter */
+  title(chapters: Chapter[]): string {
+    return this.meta?.title || super.title(chapters);
   }
 
   // https://www.hm19.lol/photos-index-page-1-aid-253297.html
+  // https://www.wnacg.com/photos-index-aid-253297-page-2.html?order=desc
   private extractIDFromHref(href: string): string | undefined {
-    const match = href.match(/-(\d+).html$/);
+    const match = href.match(/aid-(\d+)/);
     if (!match) return undefined;
     return match[1];
   }
