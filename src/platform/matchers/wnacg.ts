@@ -25,7 +25,7 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
   /** A series page has no image of its own, it lists chapters and each chapter is a normal album.
    *  The chapter list is paginated, 12 chapters per page. Its order and layout follow the viewer's
    *  cookie preference, so request it with explicit query params to always get the ascending list. */
-  async *fetchChapters(): AsyncGenerator<Chapter[], Chapter[], Chapter[]> {
+  async *fetchChapters(): AsyncGenerator<Chapter[]> {
     if (!document.querySelector("#sr_pub")) {
       return [new Chapter(0, "Default", window.location.href)];
     }
@@ -55,7 +55,7 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
       if (added === 0 || !doc.querySelector(".bot_toolbar .paginator .next")) break;
     }
     if (chapters.length === 0) throw new Error("Cannot find any chapter in this series");
-    return chapters;
+    yield chapters;
   }
 
   async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<GalleryImage[]>> {
