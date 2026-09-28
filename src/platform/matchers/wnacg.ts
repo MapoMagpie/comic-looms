@@ -23,15 +23,15 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
   galleryURL?: string;
 
   /** A series page has no image of its own, it lists chapters and each chapter is a normal album.
+   *  A reader page opened from a series carries the series id in its URL, eg: photos-slide-aid-{album}-sid-{series}.html
    *  The chapter list is paginated, 12 chapters per page. Its order and layout follow the viewer's
    *  cookie preference, so request it with explicit query params to always get the ascending list. */
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
-    if (!document.querySelector("#sr_pub")) {
-      return [new Chapter(0, "Default", window.location.href)];
-    }
-    const id = this.extractIDFromHref(window.location.href);
+    const id = document.querySelector("#sr_pub")
+      ? this.extractIDFromHref(window.location.href)
+      : window.location.href.match(/-sid-(\d+)/)?.[1];
     if (!id) {
-      throw new Error("Cannot find series ID");
+      return [new Chapter(0, "Default", window.location.href)];
     }
     const chapters: Chapter[] = [];
     const seen = new Set<string>();
@@ -252,7 +252,7 @@ type GalleryImage = {
 ADAPTER.addSetup({
   name: "绅士漫画",
   workURLs: [
-    /(wnacg.com|wn\d{2}.(cc|ru))\/photos-index/
+    /(wnacg.(com|ru)|wn\d{2}.(cc|ru))\/photos-(index|slide)/
   ],
   match: ["https://www.wnacg.com/*"],
   preloadAllPages: true,
