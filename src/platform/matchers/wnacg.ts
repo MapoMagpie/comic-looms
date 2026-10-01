@@ -177,10 +177,11 @@ class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
     return thumbnails;
   }
 
-  /** Thumbnail urls are protocol relative, eg: //baseURL/data/t/3860/55/xxx.webp */
+  /** Thumbnail urls are protocol relative, eg: //baseURL/data/t/3860/55/xxx.webp
+   *  `baseURL` is not set yet when the chapters are fetched, the current page is the fallback. */
   private toAbsoluteURL(src: string): string {
     try {
-      return new URL(src, this.baseURL).href;
+      return new URL(src, this.baseURL || window.location.href).href;
     } catch (error) {
       evLog("error", "wnacg: invalid thumbnail url:", src, error);
       return src;

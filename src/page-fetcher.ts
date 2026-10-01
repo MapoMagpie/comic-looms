@@ -8,6 +8,7 @@ import { ADAPTER } from "./platform/adapt";
 import { Matcher, Result } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
+import { i18n } from "./utils/i18n";
 import { GM_XHR } from "./utils/query";
 
 export class Chapter {
@@ -30,6 +31,9 @@ export class Chapter {
     this.filteredQueue = [];
   }
 }
+
+/** The source of the chapter that holds every chapter of a gallery, see `appendNewChapters_` */
+export const MERGED_CHAPTER_SOURCE = "ehvh://merged-chapters";
 
 /** Page Fetcher
  * PageFetcher is the core component of this program, responsible for calling various methods of `Matcher` to ultimately obtain the basic information of each image.<br>
@@ -105,12 +109,29 @@ export class PageFetcher {
   }
 
   appendNewChapters_(chapters: Chapter[], first: boolean) {
+    // the merged chapter holds every chapter of the gallery, it is only useful when there are several
+    if (first && ADAPTER.conf.mergeChapters && chapters.length > 1) {
+      const merged = new Chapter(chapters.length, i18n.mergedChapters.get(), MERGED_CHAPTER_SOURCE, chapters[0].thumbimg);
+      chapters = [merged, ...chapters];
+    }
     chapters.forEach(c => {
-      c.sourceIter = this.matcher.fetchPagesSource(c);
+      c.sourceIter = c.source === MERGED_CHAPTER_SOURCE ? this.mergedPagesSource() : this.matcher.fetchPagesSource(c);
       c.onclick = (index) => this.changeToChapter(index);
     });
     this.chapters.push(...chapters);
     EBUS.emit("pf-update-chapters", this.chapters, !first);
+  }
+
+  /** Every page source of every chapter, in chapter order, each one tagged with its own chapter.
+   *  It walks `this.chapters` while it runs, so chapters appended later are covered as well. */
+  private async *mergedPagesSource(): AsyncGenerator<Result<any>> {
+    for (let index = 0; index < this.chapters.length; index++) {
+      const chapter = this.chapters[index];
+      if (chapter.source === MERGED_CHAPTER_SOURCE) continue;
+      for await (const result of this.matcher.fetchPagesSource(chapter)) {
+        yield { ...result, chapterID: chapter.id };
+      }
+    }
   }
 
   async appendNewChapters(url: string) {
@@ -253,13 +274,13 @@ export class PageFetcher {
       }
       // Parse the next page data to IMGFetcher[], then append to view and IMGFetcherQueue
       if (next.value?.value) {
-        return await this.appendImages(next.value.value, chapterIndex);
+        return await this.appendImages(next.value.value, chapterIndex, next.value.chapterID);
       }
       // If chapter.sourceIter is done, call this.appendToView() to trigger the update of some view elements
       if (next.done) {
         chapter.done = true;
         if (next.value?.value) {
-          return await this.appendImages(next.value.value, chapterIndex);
+          return await this.appendImages(next.value.value, chapterIndex, next.value.chapterID);
         } else {
           this.appendToView(this.queue.length, [], chapterIndex, true);
           return false;
@@ -277,16 +298,18 @@ export class PageFetcher {
   /**
    * Parse the data information of each page, extract image information, create `IMGFetcher[]`, and append to `IMGFetcherQueue` and `BigImageFrameManager`
    */
-  async appendImages(pageSource: any, chapterIndex: number): Promise<boolean> {
+  async appendImages(pageSource: any, chapterIndex: number, chapterID?: number): Promise<boolean> {
     try {
-      const nodes = await this.obtainImageNodeList(pageSource, chapterIndex);
+      // a merged chapter lists the pages of every chapter, each page keeps the id of its own chapter
+      const pageChapterID = chapterID ?? this.chapters[chapterIndex].id;
+      const nodes = await this.obtainImageNodeList(pageSource, chapterIndex, pageChapterID);
       if (this.abortb) return false;
       if (nodes.length === 0) return false;
       const chapter = this.chapters[chapterIndex];
       const len = chapter.filteredQueue.length;
       const IFs = nodes.map(
         (imgNode, index) => {
-          const imf = new IMGFetcher(index + len, imgNode, this.matcher, chapterIndex, this.chapters[chapterIndex].id);
+          const imf = new IMGFetcher(index + len, imgNode, this.matcher, chapterIndex, pageChapterID);
           // add node actions
           this.nodeActionDesc.forEach(nad => {
             const f = async (node: ImageNode) => {
@@ -318,12 +341,12 @@ export class PageFetcher {
     }
   }
 
-  async obtainImageNodeList(pageSource: any, chapterIndex: number): Promise<ImageNode[]> {
+  async obtainImageNodeList(pageSource: any, chapterIndex: number, chapterID?: number): Promise<ImageNode[]> {
     let tryTimes = 0;
     let err: any;
     while (tryTimes < 3) {
       try {
-        return await this.matcher.parseImgNodes(pageSource, this.chapters[chapterIndex].id);
+        return await this.matcher.parseImgNodes(pageSource, chapterID ?? this.chapters[chapterIndex].id);
       } catch (error) {
         evLog("error", "warn: parse image nodes failed, retrying: ", error)
         tryTimes++;

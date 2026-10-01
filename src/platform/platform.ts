@@ -18,6 +18,8 @@ export type OriginMeta = {
 export class Result<T> {
   value?: T;
   error?: Error;
+  /** the chapter this page source belongs to, set by the merged chapter of PageFetcher */
+  chapterID?: number;
   static ok<T>(value: T): Result<T> {
     return {
       value,
