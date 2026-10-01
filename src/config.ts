@@ -116,6 +116,8 @@ export type Config = {
   magnifier: boolean,
   /** directly enter into big image view */
   autoEnterBig: boolean,
+  /** Merge every chapter of a gallery into one chapter, so all of them can be browsed and downloaded at once. */
+  mergeChapters: boolean,
   /** Save and restore the last reading position for each chapter. */
   recordReadingProgress: boolean,
   /** Reading position recorded. A new chapter continuing from this position will be provided next time. */
@@ -193,6 +195,7 @@ export function defaultConf(): Config {
     customStyle: "",
     magnifier: false,
     autoEnterBig: false,
+    mergeChapters: false,
     recordReadingProgress: false,
     pixivRecordReading: false,
     pixivAscendWorks: false,
@@ -386,6 +389,7 @@ export type ConfigBooleanType = "fetchOriginal"
   | "magnifier"
   | "autoEnterBig"
   | "recordReadingProgress"
+  | "mergeChapters"
   | "pixivRecordReading"
   | "pixivAscendWorks"
   | "hdThumbnails"
@@ -441,6 +445,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "mergeChapters", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "recordReadingProgress", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "dragImageOut", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },

@@ -148,7 +148,8 @@ export class ChaptersPanel {
       this.thumbnailCanvas.width = sw;
       this.thumbnailCanvas.height = sh;
       const ctx = this.thumbnailCanvas.getContext("2d")!;
-      ctx.drawImage(this.thumbnailImg, sx, sy, sw, sh, 0, 0, width, height);
+      // the source is the centered square of the cover, the destination must be the canvas itself
+      ctx.drawImage(this.thumbnailImg, sx, sy, sw, sh, 0, 0, sw, sh);
     };
     this.thumbnailImg.src = chapter.thumbimg ?? DEFAULT_THUMBNAIL;
     // create title element
