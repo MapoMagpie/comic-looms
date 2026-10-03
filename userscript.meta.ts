@@ -6,7 +6,7 @@ import { ICON } from "./userscript.icon";
  * It is used both for `_VERSION_` (see `vite.config.ts`) and for the
  * `@version` metadata line below.
  */
-export const VERSION = "4.15.5";
+export const VERSION = "4.16.0";
 
 const REPO = "https://github.com/MapoMagpie/comic-looms";
 const RELEASE = `${REPO}/releases/latest/download`;
