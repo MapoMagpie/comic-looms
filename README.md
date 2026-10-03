@@ -1,103 +1,108 @@
-# Comic Looms | [中文](./.assets/README_CN.md) | [한글](./.assets/README_KO.md) | [Spanish](./.assets/README_ES.md)
+<div align="center">
 
-**This Userscript enables quick and convenient browsing of galleries or artists' homepage on [certain sites](#multi-site-support), with batch download support, focusing on browsing experience and low site load.**
+<h2>Comic Looms</h2>
 
-## Index
-- [Features](#features)
-- [Installation](#installation)
-- [Multi-site Support](#multi-site-support)
-- [Operates](#operates)
-- [Contributing](#contributing)
-- [Feedback](#feedback)
+<a href="./.assets/README_CN.md">中文</a>
+<p>
+  This is a Userscript that provides a unified and practical reader for <a href="#multi-site-support">certain sites</a>, with download support.
+</p>
+<p>
+  Key feature: a thumbnail view, for quickly browsing an entire gallery or an artist's works;
+</p>
 
-Preview (if you can't see the image, click [here](./.assets/preview.md)):
 ![Preview](./.assets/eh-view-enhance-showcase4.avif 'Preview')
 
-## <a name="features">Features</a>
+Preview ([click here if you can't see the image](./.assets/preview.md))
 
-- **`Seamless Browsing`**
-  - The script automatically loads all images in the gallery and presents them in a grid as thumbnails, allowing for quick browsing of the entire gallery while maintaining a low load on the site.
-- **`Big Image Viewing`**
-  - You can click on any thumbnail to start browsing from that point, with multiple viewing modes available: Pagination, Continuous, Magnification, etc.
-- **`Gallery Downloading`**
-  - Save all original images and gallery information for easy management later. Supports segmented downloading to bypass browser blob limits.
-- **`Keyboard Operation`**
-  - You can click the `keyboard` in the CONF panel to learn about and configure relevant keyboard operations.
-- **`Mobile Adaptation`**
-  - Requires a browser that supports script manager extensions, such as Firefox Android, Kiwi Browser.
+</div>
 
-## <a name="installation">Installation</a>
+---
 
-1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
-1. **`Prerequisites`**: Installed extension [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/) 
-1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
-1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-comic-looms)
-1. **`Installation Link 2`**: Direct install [here](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
+## <a name="features">⭐ Features</a>
 
-## <a name="multi-site-support">Multi-site Support</a>
+- #### 🖼️ Thumbnail Preview
+  > Gives you a clean thumbnail list, letting you quickly gain an at-a-glance impression of an entire gallery or an artist's body of work.
+- #### 🔍 Big Image Viewing
+  > Click any thumbnail to start browsing from that point; includes multiple viewing modes: pagination mode and scroll mode.
+- #### 📥 Gallery Download
+  > You can download the entire gallery, or only the images you have already viewed, or only the images you have selected.
+- #### 🪶 Low Load Pursuit
+  > This script is heavily restrained with data requests; different behaviors determine how often data is requested from the site.
+  >
+  > When the script is enabled, big images are loaded at a gentle request rate.
+  >
+  > While browsing, big images are loaded at a slightly faster request rate.
+  >
+  > When downloading, the request rate is increased by the configured number of download threads.
+- #### ⌨️ Full Keyboard Operation
+  > You can click `keyboard` in the CONF panel to learn about the relevant keyboard operations and configure them.
+- #### 📱 Mobile Optimization
+  > Requires a browser that supports script manager extensions, such as: Firefox Android, Kiwi Browser.
 
-<details>
-  <summary>Currently supports</summary>
+## <a name="multi-site-support">🌐 Multi-site Support</a>
+
+This script supports many sites; thanks to the users who contributed support for new sites.
+Regarding new site adaptation, due to limited time and energy, new adaptation requests will not be actively supported.
+
+> For the complete list of supported sites, see: [matchers](https://github.com/MapoMagpie/comic-looms/tree/master/src/platform/matchers)
+
+Mainly supported sites:
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
-- [Twitter|X: User's Media, Lists, For you, Following](https://x.com/NASA/media)
-- [Instagram User POSTS](https://www.instagram.com/nasa)
-- [Pinterest: Home feed, Search Pins, Pin detail](https://www.pinterest.com/search/pins/?q=illustration)
-- [ArtStation User Portfolio](https://www.artstation.com)
-- [pixiv.net: Artists' illust and manga, Your Homepage](https://pixiv.net)
-- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
+- [Twitter|X](https://x.com/NASA/media): User's Media, Lists, For you, Following
+- [pixiv.net](https://pixiv.net): Artists' illust and manga, Your Homepage
 - [nhentai.net](https://nhentai.net)
 - [hitomi.la](https://hitomi.la)
-- [rule34.xxx](https://rule34.xxx)
-- [imhentai.xxx](https://imhentai.xxx)
-- [danbooru.donmai.us](https://danbooru.donmai.us)
 - [gelbooru.com](https://gelbooru.com)
-- [yande.re](https://yande.re)
-- [konachan.com](https://konachan.com)
-- [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
-- [wnacg.com](https://www.wnacg.com)
-- [hentainexus.com](https://hentainexus.com)
-- [niyaniya.moe(koharu.to)](https://niyaniya.moe)
 - [manhuagui.com](https://www.manhuagui.com/comic/7580)
 - [mangacopy.com](https://www.mangacopy.com) | [copymanga.tv](https://www.copymanga.tv)
-- [e621.net](https://e621.net)
-- [arca.live](https://arca.live)
-- [kone.gg](https://kone.gg)
-- [akuma.moe](https://akuma.moe)
-- [colamanga.com](https://www.colamanga.com) (suspend)
-- [yabai.si](https://yabai.si)
-- [hanime1.me](https://hanime1.me/comics)
+- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (note: this site has no default thumbnails)
+- [rule34.xxx](https://rule34.xxx)
+- [wnacg.com](https://www.wnacg.com)
 - [mycomic.com](https://mycomic.com)
-- [kemono.su](https://kemono.su)
-- [hentaizap.com](https://hentaizap.com)
-- [miniserve -p 41021](https://github.com/svenstaro/miniserve)
-- [mangapark.net](https://mangapark.net)
-- [hentai3.com](https://3hentai.net)
-- [asmhentai.com](https://asmhentai.com)
-- [eahentai.com](https://eahentai.com)
-- [bato.to v3x](https://bato.to/v3x)
 
-</details>
+## <a name="installation">📦 Installation</a>
 
-## <a name="operates">Operates</a>
+1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
+1. **`Prerequisites`**: Installed script manager extension [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
+1. **`Prerequisites`**: An unobstructed network. When the script is installed, the script manager will install some dependencies along with it; click here to check whether you can access [jsdelivr.net](https://cdn.jsdelivr.net), to ensure the script runs properly.
+1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-comic-looms)
+1. **`Installation Link 2`**: Directly visit and install from [here](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
-1. On the gallery or author homepage, click `<🎑>` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
-1. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
-1. More information can be found in `CONF` -> `Help` or [here](./.assets/HELP.md)
+## <a name="post-install">🎉 After Installation</a>
 
-## <a name="contributing">Contributing</a>
+1. After installation, you will find a floating icon `<✿>` at the bottom left of gallery pages on supported sites; this marks that the script is active.
+1. Clicking the floating icon `<✿>` enters the thumbnail display view; click on an image to start loading big images from that point.
+1. More information can be found in `CONF` -> `Help` or [here](./.assets/HELP.md).
 
-If you want to add support for certain sites, refer to the [contributing guide](CONTRIBUTING.md).
+## <a name="feedback">💬 Feedback</a>
 
-> [!NOTE]
-> For guidance on contributing, debugging and common mistakes, please also refer to [CONTRIBUTING.md](CONTRIBUTING.md).
->
-> Along with its assisting documents for deeper architecture notes and internal flow, [CONTRIBUTING_ARCHITECTURE.md](.assets/CONTRIBUTING_ARCHITECTURE.md).
->
-> For the complete project structure, please see [PROJECT_STRUCTURE.md](.assets/PROJECT_STRUCTURE.md).
+If you like this script, please give me a `star`
 
-## <a name="feedback">Feedback</a>
+If you run into any problems while the script is running, feel free to leave an [issue](https://github.com/MapoMagpie/comic-looms/issues), but be sure to provide the necessary information for troubleshooting.
 
-If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/comic-looms/issues
+<mark>Important: the full functionality of this script is only guaranteed on recent `Firefox` and `Chromium`-based browsers, as well as `Violentmonkey` and `Tampermonkey`.</mark>
 
-If you like this script, please give it a `star`.
+## <a name="development">🛠️ Development & Build</a>
+
+### 🧰 Development Environment
+
+- NodeJs
+- Typescript
+
+### ⚙️ Build
+
+```shell
+# Install dependencies
+npm run install
+# Regular build; the output is located at `dist/comic-looms.user.js`
+npm run build
+# The following command is for development; it starts a local server hosting `dist/comic-looms.user.js` and automatically builds when the code changes.
+# Visit `http://localhost:8080/dist/comic-looms.user.js` to install the built script.
+# `Violentmonkey` is recommended; this script manager supports `Track external edits`, so it can automatically install the changed build.
+npm run dev
+```
+
+### 📖 Development Guide
+
+If you want to try adding support for a certain site, you can refer to [here](./CONTRIBUTING.md)
