@@ -1,7 +1,6 @@
 import { GalleryMeta } from "../../download/gallery-meta";
 import ImageNode from "../../img-node";
 import { Chapter } from "../../page-fetcher";
-import { simpleFetch } from "../../utils/query";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 
@@ -26,7 +25,7 @@ class MangaCopyMatcher extends BaseMatcher<string> {
     yield Result.ok(source.source);
   }
   async parseImgNodes(source: string): Promise<ImageNode[]> {
-    const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
+    const raw = await window.fetch(source).then(resp => resp.text());
     const doc = new DOMParser().parseFromString(raw, "text/html");
     const jojoKey = raw.match(/var (jojo|ccy|cct|ccz)\s?=\s?'(.*?)';/)?.[2];
     if (!jojoKey) throw new Error("cannot find jojo|ccy|cct|ccz Key for decrypt :(");
@@ -54,8 +53,10 @@ class MangaCopyMatcher extends BaseMatcher<string> {
     const comicInfo = await window.fetch(comicInfoURL, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "dnts": "3",
-      }
+        "dnts": "9",
+        "Cookie": "webp=1",
+        "Referer": window.location.href
+      },
     }).then<{ code: number, message: string, results: string }>(res => res.json()).catch(reason => new Error(reason.toString()));
     if (comicInfo instanceof Error) throw new Error("获取漫画详情失败: " + comicInfo.toString());
     if (comicInfo.code !== 200) throw new Error("获取漫画详情失败: " + comicInfo.message);
@@ -65,7 +66,7 @@ class MangaCopyMatcher extends BaseMatcher<string> {
     const chapters: Chapter[] = [];
     // fetch all chapters by group
     const groups = detail.groups;
-    if (!groups) throw new Error("章节信息为空，可能被风控(一小时)");
+    if (!groups || (groups?.default?.chapters ?? []).length === 0) throw new Error("章节信息为空，可能被风控(一小时)");
     let chapterCount = 1;
     // let offset = 0;
     for (const group in groups) {
@@ -190,7 +191,7 @@ async function decrypt(raw: string, jojoKey: string): Promise<string> {
 ADAPTER.addSetup({
   name: "拷贝漫画",
   workURLs: [
-    /(mangacopy|copymanga).*?\/comic\/[^\/]*\/?$/
+    /(mangacopy|copymanga|copy4000).*?\/comic\/[^\/]*\/?$/
   ],
   match: ["https://www.mangacopy.com/*"],
   constructor: () => new MangaCopyMatcher(),
