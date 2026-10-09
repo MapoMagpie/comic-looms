@@ -12,7 +12,10 @@ class KoneMatcher extends BaseMatcher<Document> {
     return images.map((img, i) => {
       const src = img.src;
       const title = (i + 1).toString().padStart(digits, "0") + ".webp";
-      const wh = img.width > 0 && img.height > 0 ? { w: img.width, h: img.height } : undefined;
+      // read attributes instead of img.width/height: those force layout, and are 0 inside collapsed <details>
+      const w = Number(img.getAttribute("width"));
+      const h = Number(img.getAttribute("height"));
+      const wh = w > 0 && h > 0 ? { w, h } : undefined;
       return new ImageNode(src, src, title, undefined, src, wh);
     });
   }
