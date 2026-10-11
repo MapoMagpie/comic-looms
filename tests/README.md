@@ -27,7 +27,8 @@ with Pillow with delays of 100, 200, 100 and 300 ms; the static WebP is one red 
   remain after closing. Unsupported decoders retain the normal original image.
 - Context menu: 8 media actions for video, 5 for animation, none for static images
   or grid mode. X “GIF” posts are usually videos and use the video path.
-- On X home, the original three chapters should appear immediately. With no
+- On X home, keep the loading view until list discovery finishes, then show the
+  original three chapters and all discovered lists together (as in 4.16.0.1). With no
   cached management request, check pinned lists; visit the Lists page, then reopen
   Comic Looms on home and check owned/subscribed lists. Check names, duplicates,
   recommendation exclusion, list-specific pagination and switching accounts.
@@ -37,13 +38,17 @@ with Pillow with delays of 100, 200, 100 and 300 ms; the static WebP is one red 
   The legacy 4.16.0.1 descriptor is also accepted: it contains API metadata only,
   and results are requested using the current login, never copied from another account.
 - Test upgrading with the old cache shape `{queryId, features, savedAt}`. Delay
-  the main bundle and later management pages: each completed page should add
-  chapters immediately. Reopen the reader and verify the same main bundle is reused.
+  the main bundle and later management pages: the discovery helper should deliver
+  pages without blocking each other, while the homepage buffers them for one UI update.
+  Reopen the reader and verify the same main bundle is reused.
 
 ## Current limits
 
-The browser regression page and real authenticated X flows have not yet been run
-for this contribution. The X fixture response shapes are synthetic, based on the
+The user tested 4.16.1.257.3 after clearing site data: pinned lists appeared after
+about one second on first login; all lists appeared after visiting X's Lists page.
+The subsequent change to present chapters together still needs a browser check.
+Agent-driven authenticated X testing and the media browser regression page remain
+blocked/unrun. The X fixture response shapes are synthetic, based on the
 provided script; upstream API changes can require parser updates. Feature values
 prefer the page state, then the working 4.16.0.1 defaults (unknown keys use false).
 These compatibility defaults may need updating when X changes its API. Resource
