@@ -245,7 +245,7 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
   myID?: string;
 
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
-    yield [
+    const chapters = [
       new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
@@ -254,18 +254,20 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
       let nextID = 100;
       this.listAPIs.clear();
       for await (const lists of streamHomeLists(() => createHeader(this.uuid))) {
-        const chapters = lists.map(list => {
+        const listChapters = lists.map(list => {
           const id = nextID++;
           const api = new TwitterListsAPI();
           api.listID = list.id;
           this.listAPIs.set(id, api);
           return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`);
         });
-        if (chapters.length) yield chapters;
+        chapters.push(...listChapters);
       }
     } catch (error) {
       evLog("debug", "Unable to discover X home lists", error);
     }
+    // Keep the loading view until discovery finishes, then present all chapters together.
+    yield chapters;
   }
   async next(chapter: Chapter, listCursor?: string): Promise<[Item[], string | undefined]> {
     const listAPI = this.listAPIs.get(chapter.id);
