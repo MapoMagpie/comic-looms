@@ -5,7 +5,9 @@ import { AppEventDesc, AppEventIDInBigImgFrame, AppEventIDInFullViewGrid, AppEve
 import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
 
-type VisibleMode = "alway" | "onBig" | "onGrid";
+import { mediaActions, MediaAction, MediaKind, supportsMediaAction } from "./media-actions";
+
+type VisibleMode = "alway" | "onBig" | "onGrid" | "onMedia";
 
 class MenuItem {
   id: AppEventIDInBigImgFrame | AppEventIDInFullViewGrid;
@@ -28,7 +30,7 @@ export class ContextMenu {
   getTarget: (x: number, y: number) => HTMLElement | undefined;
   isBigMode: () => boolean;
   pointerDownListener: (evt: MouseEvent) => void;
-  constructor(html: Elements, fvgm: FullViewGridManager, events: AppEvents) {
+  constructor(html: Elements, fvgm: FullViewGridManager, events: AppEvents, private mediaKind: () => MediaKind) {
     this.root = html.root;
     // this.events = events;
     html.root.addEventListener("contextmenu", (event) => {
@@ -65,6 +67,7 @@ export class ContextMenu {
       ["step-image-prev", "onBig", false],
       ["step-image-next", "onBig", false],
     ];
+    for (const id of Object.keys(mediaActions) as MediaAction[]) inBigList.push([id, "onMedia", false]);
     inBigList.forEach(([id, hideOnBigMode, closeAfter]) => this.items.push(new MenuItem(id, events.inBigImageMode[id], hideOnBigMode, closeAfter)));
     const inGridList: [AppEventIDInFullViewGrid, VisibleMode, boolean][] = [
       ["open-big-image-mode", "onGrid", true],
@@ -127,6 +130,7 @@ export class ContextMenu {
         case "alway": return true;
         case "onBig": return isBigMode;
         case "onGrid": return !isBigMode;
+        case "onMedia": return isBigMode && supportsMediaAction(this.mediaKind(), item.id);
       }
     }).map<HTMLElement>(item => {
       const elem = document.createElement("div");

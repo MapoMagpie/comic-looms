@@ -18,9 +18,11 @@ import { ADAPTER } from "../platform/adapt";
 import icons from "../utils/icons";
 import { FullViewGridManager } from "./full-view-grid-manager";
 
+import { MediaAction, mediaActions } from "./media-actions";
+
 export type Events = ReturnType<typeof initEvents>;
 
-export type AppEventIDInBigImgFrame = "step-image-prev"
+export type AppEventIDInBigImgFrame = MediaAction | "step-image-prev"
   | "step-image-next"
   | "exit-big-image-mode"
   | "step-to-first-image"
@@ -352,6 +354,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         icons.playIcon,
         () => EBUS.emit("toggle-auto-play")
       ),
+      ...Object.fromEntries(Object.entries(mediaActions).map(([id, [key, icon]]) => [
+        id, new AppEventDesc([key], icon, () => BIFM.mediaAction(id as MediaAction)),
+      ])) as Record<MediaAction, AppEventDesc>,
       "round-read-mode": new AppEventDesc(
         ["alt+m"],
         icons.switchReadModeIcon,
@@ -585,6 +590,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   function bigImageFrameKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
+    const target = event.composedPath().find(item => item instanceof HTMLElement) as HTMLElement | undefined;
+    if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     const key = parseKey(event);
     const found = Object.entries(appEvents.inBigImageMode).filter(entry => !entry[1].noKeyboard).find(([id, desc]) => {
       const override = ADAPTER.conf.keyboards.inBigImageMode[id as AppEventIDInBigImgFrame];

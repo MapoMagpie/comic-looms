@@ -1260,6 +1260,14 @@ const kbInFullViewGridData: Record<AppEventIDInFullViewGrid | AppEventIDInBigImg
     '자동 재생 시작/중지',
     'Alternar reproducción automática'
   ],
+  'video-play-pause': ["Media: Play / Pause","媒体：播放 / 暂停","미디어: 재생 / 일시정지","Medios: reproducir / pausar"],
+  'video-seek-backward': ["Media: Back 5s (animation: 10% frames)","媒体：后退 5 秒（动图：10% 帧数）","미디어: 5초 뒤로 (움짤: 프레임 10%)","Medios: retroceder 5 s (animación: 10% de fotogramas)"],
+  'video-seek-forward': ["Media: Forward 5s (animation: 10% frames)","媒体：前进 5 秒（动图：10% 帧数）","미디어: 5초 앞으로 (움짤: 프레임 10%)","Medios: avanzar 5 s (animación: 10% de fotogramas)"],
+  'video-frame-prev': ["Media: Previous frame (video: approx. 1/30s)","媒体：上一帧（视频：近似 1/30 秒）","미디어: 이전 프레임 (동영상: 약 1/30초)","Medios: fotograma anterior (vídeo: aprox. 1/30 s)"],
+  'video-frame-next': ["Media: Next frame (video: approx. 1/30s)","媒体：下一帧（视频：近似 1/30 秒）","미디어: 다음 프레임 (동영상: 약 1/30초)","Medios: fotograma siguiente (vídeo: aprox. 1/30 s)"],
+  'video-mute': ["Video: Toggle mute","视频：静音切换","동영상: 음소거 전환","Vídeo: alternar silencio"],
+  'video-volume-up': ["Video: Volume +5%","视频：音量 +5%","동영상: 볼륨 +5%","Vídeo: volumen +5%"],
+  'video-volume-down': ["Video: Volume −5%","视频：音量 −5%","동영상: 볼륨 −5%","Vídeo: volumen −5%"],
   'round-read-mode': [
     'Switch Reading mode (Loop)',
     '切换阅读模式(循环)',

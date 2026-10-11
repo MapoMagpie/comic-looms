@@ -6,6 +6,9 @@ import { GM_XHR } from "../../utils/query";
 import { transactionId, uuid } from "../../utils/random";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
+import { fetchHomeLists, observeListRequests } from "./twitter-lists";
+
+observeListRequests();
 
 type Size = {
   h: number,
@@ -235,19 +238,35 @@ class TwitterListsAPI implements TwitterAPIClient {
 }
 
 class TwitterHomeForYouAPI implements TwitterAPIClient {
+  listAPIs = new Map<number, TwitterListsAPI>();
   uuid = uuid();
   seenTweetIds: Record<number, string[]> = { 1: [], 2: [], 3: [] };
   chapterCursors: Record<number, string | undefined> = { 1: undefined, 2: undefined, 3: undefined };
   myID?: string;
 
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
-    return [
+    yield [
       new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
     ];
+    try {
+      const lists = await fetchHomeLists(() => createHeader(this.uuid));
+      const chapters = lists.map((list, index) => {
+        const id = 100 + index;
+        const api = new TwitterListsAPI();
+        api.listID = list.id;
+        this.listAPIs.set(id, api);
+        return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`);
+      });
+      if (chapters.length) yield chapters;
+    } catch (error) {
+      evLog("debug", "Unable to discover X home lists", error);
+    }
   }
-  async next(chapter: Chapter): Promise<[Item[], string | undefined]> {
+  async next(chapter: Chapter, listCursor?: string): Promise<[Item[], string | undefined]> {
+    const listAPI = this.listAPIs.get(chapter.id);
+    if (listAPI) return listAPI.next(chapter, listCursor);
     const cursor = this.chapterCursors[chapter.id];
     const seenTweetIds_ = this.seenTweetIds[chapter.id];
     const seenTweetIds = seenTweetIds_.slice(-30).map(e => "\"" + e + "\"").join(",");

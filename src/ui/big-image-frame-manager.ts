@@ -15,6 +15,9 @@ import { ADAPTER } from "../platform/adapt";
 import { HTMLUgoiraElement } from "../utils/ugoira";
 import { SubData } from "../platform/platform";
 
+import { AnimationControl } from "./animation-control";
+import { MediaAction, MediaKind } from "./media-actions";
+
 type MediaElement = HTMLImageElement | HTMLVideoElement | HTMLUgoiraElement;
 type ViewportAxis = "x" | "y";
 type ViewportPosition = {
@@ -36,6 +39,8 @@ export class BigImageFrameManager {
   visible: boolean = false;
   html: Elements;
   vidController?: VideoControl;
+  private animationController?: AnimationControl;
+  private activeMedia?: HTMLElement;
   chapterIndex: number = 0;
   getChapter: (index: number) => Chapter;
   loadingHelper: HTMLElement;
@@ -84,6 +89,7 @@ export class BigImageFrameManager {
       this.append(nodes);
     });
     EBUS.subscribe("pf-change-chapter", index => {
+      this.detachMedia();
       this.chapterIndex = Math.max(0, index);
       this.container.innerHTML = "";
     });
@@ -98,6 +104,7 @@ export class BigImageFrameManager {
       if (!current) return;
       current.innerHTML = "";
       current.appendChild(this.newMediaNode(imf));
+      if (this.visible && index === this.currentIndex) this.tryPlayVideo(current.firstElementChild as HTMLElement);
     });
     EBUS.subscribe("imf-resize", (imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
@@ -196,9 +203,13 @@ export class BigImageFrameManager {
         unrender.push(elem);
       }
     }
-    unrender.forEach(ele => ele.innerHTML = "");
+    unrender.forEach(ele => {
+      if (this.activeMedia && ele.contains(this.activeMedia)) this.detachMedia();
+      ele.innerHTML = "";
+    });
     for (const elem of intersecting) {
       if (!rendered.includes(elem)) {
+        if (this.activeMedia && elem.contains(this.activeMedia)) this.detachMedia();
         elem.innerHTML = "";
         const imf = this.getIMF(elem);
         if (imf) {
@@ -348,7 +359,7 @@ export class BigImageFrameManager {
     this.visible = false;
     EBUS.emit("bifm-on-hidden");
     this.html.fullViewGrid.focus();
-    this.vidController?.detach();
+    this.detachMedia();
     this.root.classList.add("big-img-frame-collapse");
     this.renderingElements.forEach(elem => elem.innerHTML = "");
     this.renderingElements = [];
@@ -412,6 +423,7 @@ export class BigImageFrameManager {
   }
 
   changeLayout() {
+    this.detachMedia();
     this.resetScaleBigImages(true);
     switch (ADAPTER.conf.readMode) {
       case "continuous":
@@ -860,14 +872,37 @@ export class BigImageFrameManager {
 
   // if element is not HTMLVideoElement, video controller will pause(detach) the last one which is HTMLVideoElement;
   tryPlayVideo(element: HTMLElement) {
+    if (!this.visible || this.activeMedia === element) return;
+    this.detachMedia();
+    this.activeMedia = element;
+    if (element instanceof HTMLImageElement && element.src.startsWith("blob:")) {
+      this.animationController = new AnimationControl(element, this.html.root);
+      void this.animationController.init();
+    }
     if (element instanceof HTMLVideoElement) {
       if (!this.vidController) {
         this.vidController = new VideoControl(this.html.root);
       }
       this.vidController.attach(element);
-    } else {
-      this.vidController?.detach();
     }
+  }
+
+  private detachMedia() {
+    this.animationController?.destroy();
+    this.animationController = undefined;
+    this.vidController?.detach();
+    this.activeMedia = undefined;
+  }
+
+  mediaKind(): MediaKind {
+    if (!this.visible || !this.activeMedia?.isConnected) return undefined;
+    if (this.activeMedia instanceof HTMLVideoElement) return "video";
+    return this.animationController?.ready ? "animation" : undefined;
+  }
+
+  mediaAction(action: MediaAction) {
+    if (this.mediaKind() === "video") this.vidController?.action(action);
+    else if (this.mediaKind() === "animation") this.animationController?.action(action);
   }
 
   /**
