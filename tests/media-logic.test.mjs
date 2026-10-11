@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const storage = new Map();
-globalThis.GM = { xmlHttpRequest: () => { throw new Error('Unexpected network request'); } };
+let gmRequest = async options => {
+  const response = await fetch(options.url, { headers: options.headers });
+  options.onload({status:response.status,responseText:await response.text()});
+};
+globalThis.GM = { xmlHttpRequest: options => { Promise.resolve().then(() => gmRequest(options)).catch(error => options.onerror(error)); } };
 globalThis.GM_getValue = key => storage.get(key);
 globalThis.GM_setValue = (key,value) => storage.set(key,value);
 globalThis.window = { screen:{width:1920,height:1080,availHeight:1080}, btoa, location:{href:'https://x.com/home'} };
@@ -10,7 +14,7 @@ globalThis.document = {cookie:'twid=u%3D123',scripts:[]};
 globalThis.location = {origin:'https://x.com',hostname:'x.com'};
 globalThis.PerformanceObserver = undefined;
 
-const { collectLists, listCursor, parseListRequest, pinnedRequestFromBundle, fetchHomeLists } = await import('../src/platform/matchers/twitter-lists.ts');
+const { collectLists, listCursor, parseListRequest, pinnedRequestFromBundle, fetchHomeLists, streamHomeLists } = await import('../src/platform/matchers/twitter-lists.ts');
 const { VideoControl } = await import('../src/ui/video-control.ts');
 const { AnimationControl } = await import('../src/ui/animation-control.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
@@ -36,11 +40,59 @@ test('Owned/subscribed section filtering, de-duplication, user exclusion and bot
   assert.deepEqual(collectLists({pinned:[list('2')]},'PinnedTimelines').map(x=>x.id),['2']);
 });
 
-test('Pinned descriptor takes current feature values and refuses unknown feature defaults', () => {
+test('Pinned descriptor prefers current values and supports 4.16.0.1 compatibility defaults', () => {
   const bundle='queryId:"live-query",operationName:"PinnedTimelines",operationType:"query",metadata:{featureSwitches:["a","b"]}';
   assert.deepEqual(pinnedRequestFromBundle(bundle,'{"a":{"value":true},"b":{"value":false}}').features,{a:true,b:false});
-  assert.equal(pinnedRequestFromBundle(bundle,'{}'),undefined);
+  assert.deepEqual(pinnedRequestFromBundle(bundle,'{}').features,{a:false,b:false});
+  const known=bundle.replace('["a","b"]','["rweb_cashtags_enabled","rweb_video_screen_enabled"]');
+  assert.deepEqual(pinnedRequestFromBundle(known,'{}').features,{rweb_cashtags_enabled:true,rweb_video_screen_enabled:false});
   assert.equal(pinnedRequestFromBundle('unexpected source','{}'),undefined);
+});
+
+test('Management parser handles event markers and nested list objects without leaking recommendations', () => {
+  const owned={clientEventInfo:{details:{timelinesDetails:{injectionType:'OwnedSubscribedList'}}},
+    items:[{list:{id_str:'123',name:'Owned'}},{clientEventInfo:{component:'suggest_list_to_follow'},list:{id_str:'456',name:'Recommended'}}]};
+  assert.deepEqual(collectLists({instructions:[owned]},'ListsManagementPageTimeline'),[{id:'123',name:'Owned'}]);
+  assert.deepEqual(collectLists({moduleEntryId:'owned-subscribed-list-module-1',list:{rest_id:'789'}},'ListsManagementPageTimeline'),[{id:'789',name:'List 789'}]);
+  assert.deepEqual(collectLists({list:{id_str:'123',name:'Pinned',mode:'Private'}},'PinnedTimelines'),[{id:'123',name:'Pinned'}]);
+  assert.equal(listCursor([{cursorType:'Bottom',value:'extra'},{type:'TimelineTerminateTimeline',direction:'Bottom'}]),undefined);
+});
+
+test('Legacy cache and first management page display before slow bundle and later pages; bundles are reused', async () => {
+  const entries=new Map([['comicLoomsAutoListGraphQLRequest',JSON.stringify({queryId:'legacy',features:{},savedAt:Date.now()})]]);
+  const previous={gmRequest,scripts:document.scripts,performance:globalThis.performance,localStorage:globalThis.localStorage};
+  globalThis.localStorage={getItem:key=>entries.get(key),setItem:(key,value)=>entries.set(key,value),removeItem:key=>entries.delete(key)};
+  const main='https://abs.twimg.com/responsive-web/client-web/main.compat.js';
+  globalThis.performance={getEntriesByType:()=>[{name:main}]};
+  document.scripts=[];
+  let releaseBundle, releasePage, bundles=0;
+  const bundleGate=new Promise(resolve=>{releaseBundle=resolve;});
+  const pageGate=new Promise(resolve=>{releasePage=resolve;});
+  gmRequest=async options=>{
+    if(options.url===main){bundles++;await bundleGate;options.onload({status:200,responseText:'queryId:"pin",operationName:"PinnedTimelines",metadata:{featureSwitches:["unknown"]}'});return;}
+    const url=new URL(options.url), variables=JSON.parse(url.searchParams.get('variables'));
+    if(variables.cursor) await pageGate;
+    const lists=url.pathname.endsWith('PinnedTimelines') ? {list:{id_str:'10',name:'First',mode:'Private'}} :
+      {entryId:'owned-subscribed-list-module',items:[{list:{id_str:variables.cursor?'11':'10',name:variables.cursor?'Second':'First'}}],
+        ...(variables.cursor?{}:{cursor:{cursorType:'Bottom',value:'next'}})};
+    options.onload({status:200,responseText:JSON.stringify({data:lists})});
+  };
+  const iterator=streamHomeLists(()=>new Headers());
+  let timer;
+  try {
+    const first=await Promise.race([iterator.next(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('First page blocked by slow sources')),1000);})]);
+    clearTimeout(timer);
+    assert.deepEqual(first.value,[{id:'10',name:'First'}]);
+    releasePage();
+    assert.deepEqual((await iterator.next()).value,[{id:'11',name:'Second'}]);
+    releaseBundle();
+    assert.equal((await iterator.next()).done,true);
+    assert.equal((await fetchHomeLists(()=>new Headers())).length,2);
+    assert.equal(bundles,1);
+  } finally {
+    clearTimeout(timer);releasePage();releaseBundle();await iterator.return();
+    gmRequest=previous.gmRequest;document.scripts=previous.scripts;globalThis.performance=previous.performance;globalThis.localStorage=previous.localStorage;
+  }
 });
 
 test('List pagination tolerates partial errors, stops repeated cursors, invalidates stale cache and isolates accounts', async () => {

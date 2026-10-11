@@ -5,6 +5,51 @@ export type TwitterList = { id: string; name: string };
 export type ListOperation = "ListsManagementPageTimeline" | "PinnedTimelines";
 export type ListRequest = { queryId: string; operation: ListOperation; features: Record<string, boolean>; variables: JsonObject };
 const CACHE_KEY = "comicLoomsAutoListGraphQLRequest";
+// Compatibility defaults from the user's working 4.16.0.1 script. Live values take precedence.
+const FEATURE_DEFAULTS: Record<string, boolean> = {
+            rweb_video_screen_enabled: false,
+            rweb_cashtags_enabled: true,
+            profile_label_improvements_pcf_label_in_post_enabled: true,
+            responsive_web_profile_redirect_enabled: true,
+            rweb_tipjar_consumption_enabled: false,
+            verified_phone_label_enabled: false,
+            creator_subscriptions_tweet_preview_api_enabled: true,
+            responsive_web_graphql_timeline_navigation_enabled: true,
+            responsive_web_graphql_exclude_directive_enabled: true,
+            responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+            premium_content_api_read_enabled: false,
+            communities_web_enable_tweet_community_results_fetch: true,
+            c9s_tweet_anatomy_moderator_badge_enabled: true,
+            responsive_web_grok_analyze_button_fetch_trends_enabled: false,
+            responsive_web_grok_analyze_post_followups_enabled: true,
+            rweb_cashtags_composer_attachment_enabled: true,
+            responsive_web_jetfuel_frame: true,
+            rweb_sports_post_context_enabled: true,
+            responsive_web_grok_share_attachment_enabled: true,
+            responsive_web_grok_annotations_enabled: true,
+            articles_preview_enabled: true,
+            responsive_web_edit_tweet_api_enabled: true,
+            rweb_conversational_replies_downvote_enabled: false,
+            graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+            view_counts_everywhere_api_enabled: true,
+            longform_notetweets_consumption_enabled: true,
+            responsive_web_twitter_article_tweet_consumption_enabled: true,
+            content_disclosure_indicator_enabled: true,
+            content_disclosure_ai_generated_indicator_enabled: true,
+            responsive_web_grok_show_grok_translated_post: true,
+            responsive_web_grok_analysis_button_from_backend: true,
+            post_ctas_fetch_enabled: false,
+            freedom_of_speech_not_reach_fetch_enabled: true,
+            standardized_nudges_misinfo: true,
+            tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+            longform_notetweets_rich_text_read_enabled: true,
+            longform_notetweets_inline_media_enabled: false,
+            responsive_web_nested_quote_preview_enabled: true,
+            responsive_web_grok_image_annotation_enabled: true,
+            responsive_web_grok_imagine_annotation_enabled: true,
+            responsive_web_grok_community_note_auto_translation_is_enabled: true,
+            responsive_web_enhance_cards_enabled: false
+        };
 const MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 function object(value: unknown): value is JsonObject {
@@ -34,31 +79,60 @@ export function parseListRequest(raw: string, origin: string): ListRequest | und
   } catch { return undefined; }
 }
 
+function listInfo(item: JsonObject): TwitterList | undefined {
+  const id = item.id_str ?? item.rest_id ?? item.id;
+  if (typeof id !== "string" || !/^\d+$/.test(id)) return;
+  return { id, name: typeof item.name === "string" ? item.name : `List ${id}` };
+}
+
+function listSection(item: JsonObject): "owned" | "recommended" | undefined {
+  const event = object(item.clientEventInfo) ? item.clientEventInfo : {};
+  const details = object(event.details) ? event.details : {};
+  const timeline = object(details.timelinesDetails) ? details.timelinesDetails : {};
+  const markers = [timeline.injectionType, event.component, item.entryId, item.moduleEntryId,
+    item.__typename, item.displayType, item.timelineType].filter(value => typeof value === "string").join(" ");
+  if (/ListToFollow|suggest_list_to_follow|list-to-follow-module/.test(markers)) return "recommended";
+  if (/owned[-_]?subscribed[-_]?list/i.test(markers) || markers.includes("suggest_owned_subscribed_list")) return "owned";
+  return undefined;
+}
+
+function collectOwned(value: unknown, lists: Map<string, TwitterList>, inherited = false): void {
+  if (Array.isArray(value)) { value.forEach(item => collectOwned(item, lists, inherited)); return; }
+  if (!object(value)) return;
+  const section = listSection(value);
+  if (section === "recommended") return;
+  const owned = inherited || section === "owned";
+  if (owned && object(value.list)) {
+    const list = listInfo(value.list);
+    if (list) lists.set(list.id, list);
+  }
+  if (owned && value.__typename === "List") {
+    const list = listInfo(value);
+    if (list) lists.set(list.id, list);
+  }
+  Object.entries(value).forEach(([key, child]) =>
+    collectOwned(child, lists, owned || /owned[-_]?subscribed[-_]?list/i.test(key)));
+}
+
 export function collectLists(data: unknown, operation: ListOperation): TwitterList[] {
   const lists = new Map<string, TwitterList>();
-  const collect = (value: unknown) => walk(value, item => {
-    const id = item.id_str ?? item.rest_id ?? item.id;
-    if (typeof id !== "string" || !/^\d+$/.test(id) || typeof item.name !== "string") return;
-    // Do not accidentally treat the list owner's user object as a list.
-    if (item.__typename !== "List" && !("member_count" in item) && !("subscriber_count" in item)) return;
-    lists.set(id, { id, name: item.name });
-  });
-  if (operation === "PinnedTimelines") collect(data);
+  if (operation === "ListsManagementPageTimeline") collectOwned(data, lists);
   else walk(data, item => {
-    // Only account-owned/subscribed sections; recommended sections must not leak in.
-    if ([item.__typename, item.entryId, item.displayType, item.timelineType].some(value =>
-      typeof value === "string" && /owned[-_]?subscribed[-_]?list/i.test(value))) collect(item);
-    for (const [key, value] of Object.entries(item)) if (/owned[-_]?subscribed[-_]?list/i.test(key)) collect(value);
+    if (item.__typename !== "List" && !("mode" in item) && !("member_count" in item) && !("subscriber_count" in item)) return;
+    const list = listInfo(item);
+    if (list) lists.set(list.id, list);
   });
   return [...lists.values()];
 }
 
 export function listCursor(data: unknown): string | undefined {
   let cursor: string | undefined;
+  let terminated = false;
   walk(data, item => {
+    if (item.type === "TimelineTerminateTimeline" && item.direction === "Bottom") terminated = true;
     if (item.cursorType === "Bottom" && typeof item.value === "string") cursor = item.value;
   });
-  return cursor;
+  return terminated ? undefined : cursor;
 }
 
 // Parse data literals only. Never evaluate downloaded JavaScript.
@@ -71,8 +145,7 @@ export function pinnedRequestFromBundle(bundle: string, state: string): ListRequ
     const features: Record<string, boolean> = {};
     for (const key of switches as string[]) {
       const value = state.match(new RegExp(`"${key}"\\s*:\\s*\\{\\s*"value"\\s*:\\s*(true|false)`))?.[1];
-      if (value === undefined) return; // Unknown feature values must not be guessed.
-      features[key] = value === "true";
+      features[key] = value === undefined ? FEATURE_DEFAULTS[key] ?? false : value === "true";
     }
     return { queryId: definition[1], operation: "PinnedTimelines", features, variables: {} };
   } catch { return undefined; }
@@ -109,11 +182,14 @@ export function observeListRequests() {
   } catch { observer?.disconnect(); observer = undefined; }
 }
 
-function cachedRequest(account: string): ListRequest | undefined {
+function cachedRequest(account?: string): ListRequest | undefined {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-    if (!cached || cached.account !== account || !Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt > MAX_AGE) return;
-    const request = cached.request;
+    if (!cached) return;
+    // Legacy entries contain an API descriptor, not lists or credentials. Re-fetch with the current account.
+    const legacy = typeof cached.queryId === "string" && /^[\w-]+$/.test(cached.queryId);
+    if (!legacy && (!account || cached.account !== account || !Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt > MAX_AGE)) return;
+    const request = legacy ? { queryId: cached.queryId, operation: "ListsManagementPageTimeline", features: cached.features ?? FEATURE_DEFAULTS, variables: {} } : cached.request;
     const url = new URL(`/i/api/graphql/${request.queryId}/${request.operation}`, location.origin);
     url.searchParams.set("features", JSON.stringify(request.features));
     url.searchParams.set("variables", JSON.stringify(request.variables));
@@ -121,14 +197,29 @@ function cachedRequest(account: string): ListRequest | undefined {
   } catch { return undefined; }
 }
 
-async function discoverPinned(): Promise<ListRequest | undefined> {
-  const src = Array.from(document.scripts).map(script => script.src).find(src => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(src));
-  if (!src) return;
-  const bundle = await new Promise<string>((resolve, reject) => GM_XHR({
-    method: "GET", url: src, responseType: "text", timeout: 10000,
-    onload: response => response.status === 200 ? resolve(response.responseText) : reject(new Error("X bundle unavailable")),
-    onerror: () => reject(new Error("X bundle request failed")), ontimeout: () => reject(new Error("X bundle timeout")),
+function requestText(url: string, headers: Record<string, string> = {}): Promise<string> {
+  return new Promise((resolve, reject) => GM_XHR({
+    method: "GET", url, headers, responseType: "text", timeout: 10000,
+    onload: response => response.status >= 200 && response.status < 300
+      ? resolve(response.responseText) : reject(new Error(`X lists HTTP ${response.status}`)),
+    onerror: () => reject(new Error("X lists request failed")),
+    ontimeout: () => reject(new Error("X lists request timed out")),
+    onabort: () => reject(new Error("X lists request aborted")),
   }));
+}
+
+const bundles = new Map<string, Promise<string>>();
+async function discoverPinned(): Promise<ListRequest | undefined> {
+  const urls = [...Array.from(document.scripts).map(script => script.src),
+    ...performance.getEntriesByType("resource").map(entry => entry.name)];
+  const src = urls.find(src => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(src));
+  if (!src) return;
+  let pending = bundles.get(src);
+  if (!pending) {
+    pending = requestText(src).catch(error => { bundles.delete(src); throw error; });
+    bundles.set(src, pending);
+  }
+  const bundle = await pending;
   return pinnedRequestFromBundle(bundle, Array.from(document.scripts).filter(script => !script.src).map(script => script.textContent || "").join("\n"));
 }
 
@@ -147,9 +238,10 @@ function isFatalListError(error: unknown) {
 }
 
 async function fetchListPage(request: ListRequest, headers: () => Headers, cursor?: string) {
-  const response = await fetch(listRequestURL(request, cursor), { headers: headers(), signal: AbortSignal.timeout(10000) });
-  if (!response.ok) throw new Error(`X lists HTTP ${response.status}`);
-  const json = await response.json();
+  const values: Record<string, string> = {};
+  headers().forEach((value, key) => { values[key] = value; });
+  const text = await requestText(listRequestURL(request, cursor).href, values);
+  const json = JSON.parse(text);
   if (!json.data) throw new Error("X lists response missing data");
   const lists = collectLists(json.data, request.operation);
   if (!lists.length && Array.isArray(json.errors) && json.errors.some(isFatalListError)) throw new Error("X lists GraphQL error");
@@ -164,7 +256,7 @@ function invalidateListRequest(request: ListRequest, account?: string) {
   if (account) delete observed.get(account)?.ListsManagementPageTimeline;
 }
 
-async function fetchListPages(request: ListRequest | undefined, headers: () => Headers, account?: string) {
+async function fetchListPages(request: ListRequest | undefined, headers: () => Headers, account: string | undefined, emit: (lists: TwitterList[]) => void) {
   if (!request) return [];
   const lists = new Map<string, TwitterList>();
   const seen = new Set<string>();
@@ -174,24 +266,53 @@ async function fetchListPages(request: ListRequest | undefined, headers: () => H
     for (let page = 0; page < 20; page++) {
       if (accountID() !== account) return [];
       const result = await fetchListPage(request, headers, cursor);
+      if (accountID() !== account) return [];
       result.lists.forEach(list => lists.set(list.id, list));
+      emit(result.lists);
       cursor = result.next;
       if (!cursor || seen.has(cursor)) break;
       seen.add(cursor);
     }
-  } catch { invalidateListRequest(request, account); }
+  } catch (error) {
+    console.debug("Comic Looms: list discovery failed", error);
+    invalidateListRequest(request, account);
+  }
   return accountID() === account ? [...lists.values()] : [];
 }
 
-export async function fetchHomeLists(headers: () => Headers): Promise<TwitterList[]> {
+async function loadHomeLists(headers: () => Headers, account: string | undefined, emit: (lists: TwitterList[]) => void) {
   observeListRequests();
-  const account = accountID();
   const requests = account ? observed.get(account) : undefined;
-  const management = requests?.ListsManagementPageTimeline ?? (account ? cachedRequest(account) : undefined);
-  let pinned = requests?.PinnedTimelines;
-  if (!pinned) { try { pinned = await discoverPinned(); } catch { /* Keep the original chapters. */ } }
-  const results = await Promise.allSettled([management, pinned].map(request => fetchListPages(request, headers, account)));
-  const merged = new Map<string, TwitterList>();
-  results.forEach(result => { if (result.status === "fulfilled") result.value.forEach(list => merged.set(list.id, list)); });
-  return [...merged.values()];
+  const management = requests?.ListsManagementPageTimeline ?? cachedRequest(account);
+  const pinned = async () => {
+    const request = requests?.PinnedTimelines ?? await discoverPinned();
+    await fetchListPages(request, headers, account, emit);
+  };
+  // Start management immediately; a slow bundle or endpoint cannot hold back the other source.
+  const results = await Promise.allSettled([fetchListPages(management, headers, account, emit), pinned()]);
+  results.forEach(result => { if (result.status === "rejected") console.debug("Comic Looms: pinned lists unavailable", result.reason); });
+}
+
+export async function* streamHomeLists(headers: () => Headers): AsyncGenerator<TwitterList[]> {
+  const account = accountID();
+  const batches: TwitterList[][] = [];
+  const seen = new Set<string>();
+  let wake: (() => void) | undefined;
+  let finished = false;
+  const emit = (lists: TwitterList[]) => { batches.push(lists); wake?.(); };
+  const pending = loadHomeLists(headers, account, emit).finally(() => { finished = true; wake?.(); });
+  while (!finished || batches.length) {
+    if (!batches.length) await new Promise<void>(resolve => { wake = resolve; });
+    if (accountID() !== account) break;
+    const batch = (batches.shift() ?? []).filter(list => !seen.has(list.id));
+    batch.forEach(list => seen.add(list.id));
+    if (batch.length) yield batch;
+  }
+  await pending;
+}
+
+export async function fetchHomeLists(headers: () => Headers): Promise<TwitterList[]> {
+  const lists: TwitterList[] = [];
+  for await (const batch of streamHomeLists(headers)) lists.push(...batch);
+  return lists;
 }
