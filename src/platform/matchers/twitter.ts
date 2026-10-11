@@ -391,24 +391,7 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
         evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
         continue;
       }
-      let actionLike: NodeAction | undefined;
-      let actionBookmark: NodeAction | undefined;
-      if (tweetID) {
-        actionLike = new NodeAction("♥", "like this tweet", async () => {
-          await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
-            "headers": createHeader(this.uuid),
-            "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"lI07N6Otwv1PhnEgXILM7A\"}",
-            "method": "POST", "mode": "cors"
-          });
-        });
-        actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
-          await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
-            "headers": createHeader(this.uuid),
-            "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"aoDbu3RHznuiSkQ9aNM67Q\"}",
-            "method": "POST", "mode": "cors"
-          });
-        });
-      }
+      const actions = this.tweetActions(tweetID);
       this.postCount++;
       if (ADAPTER.conf.reverseMultipleImagesPost) {
         mediaList.reverse();
@@ -422,40 +405,70 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
           evLog("error", `Not supported media type: ${media.type}`);
           continue;
         }
-        const ext = media.media_url_https.split(".").pop();
-        const baseSrc = media.media_url_https.replace(`.${ext}`, "");
-        const src = `${baseSrc}?format=${ext}&name=${media.sizes.small ? "small" : "thumb"}`;
-        let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
-        href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`
-        let largeSrc = "";
-        if (ADAPTER.conf.fetchOriginal && media.original_info) {
-          // largeSrc = `${baseSrc}?format=${ext}&name=4096x4096`;
-          largeSrc = `${baseSrc}?format=${ext}&name=orig`;
-        } else {
-          largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
-        }
-        const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
-        const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
-        const node = new ImageNode(src, href, title, undefined, largeSrc, wh);
-        if (actionLike) node.actions.push(actionLike);
-        if (actionBookmark) node.actions.push(actionBookmark);
-
-        if (media.video_info) {
-          let bitrate = 0;
-          for (const variant of media.video_info.variants) {
-            if (variant.bitrate !== undefined && variant.bitrate >= bitrate) {
-              bitrate = variant.bitrate;
-              node.originSrc = variant.url;
-              node.mimeType = variant.content_type;
-              node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
-            }
-          }
-        }
+        const node = this.mediaNode(media, i, actions);
         list.push(node);
         this.mediaCount++;
       }
     }
     return list;
+  }
+
+  private tweetActions(tweetID?: string): NodeAction[] {
+    let actionLike: NodeAction | undefined;
+    let actionBookmark: NodeAction | undefined;
+    if (tweetID) {
+      actionLike = new NodeAction("♥", "like this tweet", async () => {
+        await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
+          "headers": createHeader(this.uuid),
+          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"lI07N6Otwv1PhnEgXILM7A\"}",
+          "method": "POST", "mode": "cors"
+        });
+      });
+      actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
+        await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
+          "headers": createHeader(this.uuid),
+          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"aoDbu3RHznuiSkQ9aNM67Q\"}",
+          "method": "POST", "mode": "cors"
+        });
+      });
+    }
+    return [actionLike, actionBookmark].filter((action): action is NodeAction => action !== undefined);
+  }
+
+  private mediaNode(media: Media, index: number, actions: NodeAction[]) {
+    const ext = media.media_url_https.split(".").pop();
+    const baseSrc = media.media_url_https.replace(`.${ext}`, "");
+    const src = `${baseSrc}?format=${ext}&name=${media.sizes.small ? "small" : "thumb"}`;
+    let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
+    href = `${href}/${media.type === "video" ? "video" : "photo"}/${index + 1}`
+    let largeSrc = "";
+    if (ADAPTER.conf.fetchOriginal && media.original_info) {
+      // largeSrc = `${baseSrc}?format=${ext}&name=4096x4096`;
+      largeSrc = `${baseSrc}?format=${ext}&name=orig`;
+    } else {
+      largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
+    }
+    const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
+    const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
+    const node = new ImageNode(src, href, title, undefined, largeSrc, wh);
+    node.actions.push(...actions);
+
+    this.selectVideoVariant(node, media.video_info);
+    return node;
+  }
+
+  private selectVideoVariant(node: ImageNode, info?: VideoInfo) {
+    if (info) {
+      let bitrate = 0;
+      for (const variant of info.variants) {
+        if (variant.bitrate !== undefined && variant.bitrate >= bitrate) {
+          bitrate = variant.bitrate;
+          node.originSrc = variant.url;
+          node.mimeType = variant.content_type;
+          node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
+        }
+      }
+    }
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {

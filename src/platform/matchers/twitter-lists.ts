@@ -132,6 +132,57 @@ async function discoverPinned(): Promise<ListRequest | undefined> {
   return pinnedRequestFromBundle(bundle, Array.from(document.scripts).filter(script => !script.src).map(script => script.textContent || "").join("\n"));
 }
 
+function listRequestURL(request: ListRequest, cursor?: string) {
+  const variables = { ...request.variables };
+  if (request.operation === "ListsManagementPageTimeline") variables.count = 100;
+  if (cursor) variables.cursor = cursor;
+  const url = new URL(`/i/api/graphql/${request.queryId}/${request.operation}`, location.origin);
+  url.searchParams.set("variables", JSON.stringify(variables));
+  url.searchParams.set("features", JSON.stringify(request.features));
+  return url;
+}
+
+function isFatalListError(error: unknown) {
+  return !object(error) || typeof error.message !== "string" || !error.message.includes("DecodeException");
+}
+
+async function fetchListPage(request: ListRequest, headers: () => Headers, cursor?: string) {
+  const response = await fetch(listRequestURL(request, cursor), { headers: headers(), signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error(`X lists HTTP ${response.status}`);
+  const json = await response.json();
+  if (!json.data) throw new Error("X lists response missing data");
+  const lists = collectLists(json.data, request.operation);
+  if (!lists.length && Array.isArray(json.errors) && json.errors.some(isFatalListError)) throw new Error("X lists GraphQL error");
+  const next = request.operation === "ListsManagementPageTimeline" ? listCursor(json.data) : undefined;
+  return { lists, next };
+}
+
+function invalidateListRequest(request: ListRequest, account?: string) {
+  if (request.operation !== "ListsManagementPageTimeline" || accountID() !== account) return;
+  invalidRequests.add(`${account}:${request.operation}:${request.queryId}`);
+  try { localStorage.removeItem(CACHE_KEY); } catch { /* storage disabled */ }
+  if (account) delete observed.get(account)?.ListsManagementPageTimeline;
+}
+
+async function fetchListPages(request: ListRequest | undefined, headers: () => Headers, account?: string) {
+  if (!request) return [];
+  const lists = new Map<string, TwitterList>();
+  const seen = new Set<string>();
+  let cursor: string | undefined;
+  // Bounded traversal protects against malformed cursors and unbounded account lists.
+  try {
+    for (let page = 0; page < 20; page++) {
+      if (accountID() !== account) return [];
+      const result = await fetchListPage(request, headers, cursor);
+      result.lists.forEach(list => lists.set(list.id, list));
+      cursor = result.next;
+      if (!cursor || seen.has(cursor)) break;
+      seen.add(cursor);
+    }
+  } catch { invalidateListRequest(request, account); }
+  return accountID() === account ? [...lists.values()] : [];
+}
+
 export async function fetchHomeLists(headers: () => Headers): Promise<TwitterList[]> {
   observeListRequests();
   const account = accountID();
@@ -139,41 +190,7 @@ export async function fetchHomeLists(headers: () => Headers): Promise<TwitterLis
   const management = requests?.ListsManagementPageTimeline ?? (account ? cachedRequest(account) : undefined);
   let pinned = requests?.PinnedTimelines;
   if (!pinned) { try { pinned = await discoverPinned(); } catch { /* Keep the original chapters. */ } }
-  const results = await Promise.allSettled([management, pinned].map(async request => {
-    if (!request) return [];
-    const lists = new Map<string, TwitterList>();
-    const seen = new Set<string>();
-    let cursor: string | undefined;
-    // Bounded traversal protects against malformed cursors and unbounded account lists.
-    for (let page = 0; page < 20; page++) {
-      if (accountID() !== account) return [];
-      const variables = { ...request.variables, ...(request.operation === "ListsManagementPageTimeline" ? { count: 100 } : {}), ...(cursor ? { cursor } : {}) };
-      const url = new URL(`/i/api/graphql/${request.queryId}/${request.operation}`, location.origin);
-      url.searchParams.set("variables", JSON.stringify(variables));
-      url.searchParams.set("features", JSON.stringify(request.features));
-      try {
-        const response = await fetch(url, { headers: headers(), signal: AbortSignal.timeout(10000) });
-        if (!response.ok) throw new Error(`X lists HTTP ${response.status}`);
-        const json = await response.json();
-        if (!json.data) throw new Error("X lists response missing data");
-        const pageLists = collectLists(json.data, request.operation);
-        if (!pageLists.length && Array.isArray(json.errors) && json.errors.some((error: unknown) =>
-          !object(error) || typeof error.message !== "string" || !error.message.includes("DecodeException"))) throw new Error("X lists GraphQL error");
-        pageLists.forEach(list => lists.set(list.id, list));
-        cursor = request.operation === "ListsManagementPageTimeline" ? listCursor(json.data) : undefined;
-        if (!cursor || seen.has(cursor)) break;
-        seen.add(cursor);
-      } catch {
-        if (request.operation === "ListsManagementPageTimeline" && accountID() === account) {
-          invalidRequests.add(`${account}:${request.operation}:${request.queryId}`);
-          try { localStorage.removeItem(CACHE_KEY); } catch { /* storage disabled */ }
-          if (account) delete observed.get(account)?.ListsManagementPageTimeline;
-        }
-        break;
-      }
-    }
-    return accountID() === account ? [...lists.values()] : [];
-  }));
+  const results = await Promise.allSettled([management, pinned].map(request => fetchListPages(request, headers, account)));
   const merged = new Map<string, TwitterList>();
   results.forEach(result => { if (result.status === "fulfilled") result.value.forEach(list => merged.set(list.id, list)); });
   return [...merged.values()];
