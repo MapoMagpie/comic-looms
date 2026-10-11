@@ -34,15 +34,21 @@ with Pillow with delays of 100, 200, 100 and 300 ms; the static WebP is one red 
 - Block a list endpoint or clear its cache and ensure the original chapters keep
   working. The management request cache is account-scoped, expires after seven
   days, and never stores authentication headers, cookies or request cursors.
+  The legacy 4.16.0.1 descriptor is also accepted: it contains API metadata only,
+  and results are requested using the current login, never copied from another account.
+- Test upgrading with the old cache shape `{queryId, features, savedAt}`. Delay
+  the main bundle and later management pages: each completed page should add
+  chapters immediately. Reopen the reader and verify the same main bundle is reused.
 
 ## Current limits
 
 The browser regression page and real authenticated X flows have not yet been run
 for this contribution. The X fixture response shapes are synthetic, based on the
-provided design; upstream API changes can require parser updates. Discovery
-fails closed when a live feature-switch value cannot be found. Resource timing
-visibility varies with the browser/userscript manager. The main bundle fallback
-only reads the script URL already present in the document; it does not evaluate
+provided script; upstream API changes can require parser updates. Feature values
+prefer the page state, then the working 4.16.0.1 defaults (unknown keys use false).
+These compatibility defaults may need updating when X changes its API. Resource
+timing visibility varies with the browser/userscript manager. The main bundle fallback
+reads script URLs from the document and resource timing; it does not evaluate
 downloaded code. Management pagination is capped at 20 requests. Per-list tweet
 fetching reuses the existing upstream TwitterListsAPI (including its existing
 tweet-timeline query ID).

@@ -6,7 +6,7 @@ import { GM_XHR } from "../../utils/query";
 import { transactionId, uuid } from "../../utils/random";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
-import { fetchHomeLists, observeListRequests } from "./twitter-lists";
+import { streamHomeLists, observeListRequests } from "./twitter-lists";
 
 observeListRequests();
 
@@ -251,15 +251,18 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
       new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
     ];
     try {
-      const lists = await fetchHomeLists(() => createHeader(this.uuid));
-      const chapters = lists.map((list, index) => {
-        const id = 100 + index;
-        const api = new TwitterListsAPI();
-        api.listID = list.id;
-        this.listAPIs.set(id, api);
-        return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`);
-      });
-      if (chapters.length) yield chapters;
+      let nextID = 100;
+      this.listAPIs.clear();
+      for await (const lists of streamHomeLists(() => createHeader(this.uuid))) {
+        const chapters = lists.map(list => {
+          const id = nextID++;
+          const api = new TwitterListsAPI();
+          api.listID = list.id;
+          this.listAPIs.set(id, api);
+          return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`);
+        });
+        if (chapters.length) yield chapters;
+      }
     } catch (error) {
       evLog("debug", "Unable to discover X home lists", error);
     }
