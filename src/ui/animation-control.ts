@@ -52,10 +52,8 @@ export class AnimationControl {
       const response = await fetch(this.src, { signal: this.abort.signal });
       const blob = await response.blob();
       if (!this.live()) return;
-      const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
-      const text = String.fromCharCode(...header);
-      const type = text.startsWith("GIF8") ? "image/gif" : text.startsWith("RIFF") && text.slice(8) === "WEBP" ? "image/webp" : "";
-      if (!type || !await ImageDecoder.isTypeSupported(type) || !this.live()) return;
+      const type = await this.animationType(blob, ImageDecoder);
+      if (!type) return;
       const data = await blob.arrayBuffer();
       if (!this.live()) return;
       const decoder = this.decoder = new ImageDecoder({ data, type, preferAnimation: true });
@@ -65,15 +63,11 @@ export class AnimationControl {
       const track = decoder.tracks.selectedTrack;
       if (!track?.animated || track.frameCount < 2) { decoder.close(); this.decoder = undefined; return; }
       this.count = track.frameCount;
-      this.canvas = document.createElement("canvas");
-      this.canvas.className = this.img.className;
-      this.canvas.style.cssText = this.img.style.cssText;
-      this.canvas.setAttribute("role", "img");
-      this.canvas.setAttribute("aria-label", this.img.alt || "Animated image");
+      this.createCanvas();
       // Draw before hiding the original so a failed decoder always leaves a visible image.
       await this.draw(0, ++this.version);
       if (!this.live()) return;
-      this.img.after(this.canvas);
+      this.img.after(this.canvas!);
       this.img.style.display = "none";
       this.createBar();
       this.ready = true;
@@ -82,6 +76,24 @@ export class AnimationControl {
       if (!this.disposed) console.debug("Comic Looms: animated image control unavailable", error);
       this.destroy();
     }
+  }
+
+  private async animationType(blob: Blob, decoder: DecoderConstructor) {
+    const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+    const text = String.fromCharCode(...header);
+    let type = "";
+    if (text.startsWith("GIF8")) type = "image/gif";
+    if (text.startsWith("RIFF") && text.slice(8) === "WEBP") type = "image/webp";
+    if (!type || !await decoder.isTypeSupported(type) || !this.live()) return;
+    return type;
+  }
+
+  private createCanvas() {
+    this.canvas = document.createElement("canvas");
+    this.canvas.className = this.img.className;
+    this.canvas.style.cssText = this.img.style.cssText;
+    this.canvas.setAttribute("role", "img");
+    this.canvas.setAttribute("aria-label", this.img.alt || "Animated image");
   }
 
   private live() {
