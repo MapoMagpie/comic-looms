@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Comic Looms media regression tests</title>
+<style>body{font:16px system-ui;margin:32px;background:#f5f7fb;color:#162039}li{margin:8px 0}.pass{color:#167345}.fail{color:#b02020}#fixture{position:relative;min-height:100px}canvas,img{max-width:128px}</style>
+<h1>Comic Looms media regression tests</h1><p id="status">Running…</p><ol id="results"></ol><div id="fixture"></div>
+<script>
+// Test doubles stay on localhost and do not access userscript settings or X.
+window.GM = { xmlHttpRequest: () => { throw new Error('Unexpected GM request in test'); } };
+window.GM_getValue = key => sessionStorage.getItem(key);
+window.GM_setValue = (key, value) => sessionStorage.setItem(key, value);
+</script>
+<script type="module" src="./media-controls.js"></script></html>

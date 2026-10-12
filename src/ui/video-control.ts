@@ -3,6 +3,7 @@ import { ADAPTER } from "../platform/adapt";
 import { evLog } from "../utils/ev-log";
 import onMouse from "../utils/progress-bar";
 import q from "../utils/query-element";
+import { clamp, MediaAction } from "./media-actions";
 
 const PLAY_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M106.854 106.002a26.003 26.003 0 0 0-25.64 29.326c16 124 16 117.344 0 241.344a26.003 26.003 0 0 0 35.776 27.332l298-124a26.003 26.003 0 0 0 0-48.008l-298-124a26.003 26.003 0 0 0-10.136-1.994z"/></svg>`;
 const PAUSE_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M120.16 45A20.162 20.162 0 0 0 100 65.16v381.68A20.162 20.162 0 0 0 120.16 467h65.68A20.162 20.162 0 0 0 206 446.84V65.16A20.162 20.162 0 0 0 185.84 45h-65.68zm206 0A20.162 20.162 0 0 0 306 65.16v381.68A20.162 20.162 0 0 0 326.16 467h65.68A20.162 20.162 0 0 0 412 446.84V65.16A20.162 20.162 0 0 0 391.84 45h-65.68z"/></svg>`;
@@ -31,6 +32,8 @@ export class VideoControl {
   abort?: AbortController;
   elementID?: string;
   root: HTMLElement;
+  private revealTimer?: ReturnType<typeof setTimeout>;
+  private element?: HTMLVideoElement;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -80,20 +83,23 @@ export class VideoControl {
   }
 
   private flushUI(state?: VideoState, onlyState?: boolean) {
-    const { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
-    const percent = (value / max) * 100;
+    const value = Number.isFinite(state?.time) ? state!.time : 0;
+    const max = Number.isFinite(state?.duration) ? state!.duration : 0;
+    const percent = max > 0 ? clamp(value / max * 100, 0, 100) : 0;
     (this.ui.progress.firstElementChild as HTMLElement).style.width = `${percent}%`;
     this.ui.time.textContent = secondsToTime(value);
     this.ui.duration.textContent = secondsToTime(max);
     if (onlyState) return;
     this.ui.playBTN.innerHTML = this.paused ? PLAY_ICON : PAUSE_ICON;
     this.ui.volumeBTN.innerHTML = ADAPTER.conf.muted ? MUTED_ICON : VOLUME_ICON;
-    (this.ui.volumeProgress.firstElementChild as HTMLElement).style.width = `${ADAPTER.conf.volume || 30}%`;
+    (this.ui.volumeProgress.firstElementChild as HTMLElement).style.width = `${ADAPTER.conf.volume ?? 30}%`;
   }
 
   public attach(element: HTMLVideoElement) {
+    if (this.getVideoElement() === element) return;
     // evLog("info", "attach video control, src: ", element.src)
     this.detach();
+    this.element = element;
     this.show();
     this.abort = new AbortController();
     const state = { time: element.currentTime, duration: element.duration };
@@ -102,20 +108,25 @@ export class VideoControl {
       const ele = event.target as HTMLVideoElement;
       if (!state) return;
       state.time = ele.currentTime;
+      state.duration = ele.duration;
       this.flushUI(state, true);
     }, { signal: this.abort.signal });
+    const sync = () => {
+      if (this.getVideoElement() !== element) return;
+      this.paused = element.paused;
+      this.flushUI({ time: element.currentTime, duration: element.duration });
+    };
+    for (const name of ["play", "pause", "durationchange", "loadedmetadata", "volumechange"]) {
+      element.addEventListener(name, sync, { signal: this.abort.signal });
+    }
     // why onwaiting triggered when approaching the end of video?
     element.onwaiting = () => evLog("debug", "onwaiting");
-    element.onended = () => {
-      element.currentTime = 0;
-      element.play();
-    };
-    // element.loop = true;
+    element.loop = true;
     element.muted = ADAPTER.conf.muted || false;
-    element.volume = Math.min(1, (ADAPTER.conf.volume || 30) / 100);
+    element.volume = clamp((ADAPTER.conf.volume ?? 30) / 100, 0, 1);
 
     if (!this.paused) {
-      element.play();
+      void element.play().catch(() => sync());
     }
 
     this.elementID = element.id;
@@ -124,29 +135,16 @@ export class VideoControl {
       element.id = this.elementID;
     }
     this.ui.playBTN.addEventListener("click", () => {
-      const vid = this.getVideoElement();
-      if (!vid) return;
-      this.paused = !this.paused;
-      if (this.paused) {
-        vid.pause();
-      } else {
-        vid.play();
-      }
-      this.flushUI(state);
+      this.action("video-play-pause");
     }, { signal: this.abort.signal });
     this.ui.volumeBTN.addEventListener("click", () => {
-      const vid = this.getVideoElement();
-      if (!vid) return;
-      ADAPTER.conf.muted = !ADAPTER.conf.muted;
-      vid.muted = ADAPTER.conf.muted;
-      saveConf({ muted: vid.muted });
-      this.flushUI(state);
+      this.action("video-mute");
     }, { signal: this.abort.signal });
 
     onMouse(this.ui.progress, (percent) => {
       const vid = this.getVideoElement();
-      if (!vid) return;
-      vid.currentTime = vid.duration * (percent / 100);
+      if (!vid || !Number.isFinite(vid.duration)) return;
+      vid.currentTime = vid.duration * (clamp(percent, 0, 100) / 100);
       state.time = vid.currentTime;
       this.flushUI(state);
     }, this.abort.signal);
@@ -154,7 +152,7 @@ export class VideoControl {
     onMouse(this.ui.volumeProgress, (percent) => {
       const vid = this.getVideoElement();
       if (!vid) return;
-      ADAPTER.conf.volume = Math.min(100, percent);
+      ADAPTER.conf.volume = clamp(percent, 0, 100);
       vid.volume = Math.min(1, ADAPTER.conf.volume / 100);
       saveConf({ volume: ADAPTER.conf.volume });
       this.flushUI(state);
@@ -162,17 +160,65 @@ export class VideoControl {
   }
 
   public detach() {
+    clearTimeout(this.revealTimer);
+    this.ui.root.classList.remove("bifm-vid-ctl-reveal");
+    this.abort?.abort();
     const vid = this.getVideoElement();
     if (vid) vid.pause();
     this.elementID = undefined;
-    this.abort?.abort();
+    this.element = undefined;
     this.abort = undefined;
     this.flushUI();
     this.hidden();
   }
 
+  public action(action: MediaAction) {
+    const vid = this.getVideoElement();
+    if (!vid) return;
+    switch (action) {
+      case "video-play-pause":
+        this.paused = !vid.paused;
+        if (this.paused) vid.pause();
+        else void vid.play().catch(() => {
+          if (this.getVideoElement() === vid) { this.paused = vid.paused; this.sync(vid); }
+        });
+        break;
+      case "video-seek-backward":
+      case "video-seek-forward":
+      case "video-frame-prev":
+      case "video-frame-next": {
+        const frame = action.startsWith("video-frame-");
+        if (frame) { this.paused = true; vid.pause(); }
+        if (!Number.isFinite(vid.duration) || vid.duration <= 0) break;
+        // HTMLVideoElement has no portable frame-index seek API. This is a 30fps approximation.
+        const delta = (action.endsWith("backward") || action.endsWith("prev") ? -1 : 1) * (frame ? 1 / 30 : 5);
+        vid.currentTime = clamp(vid.currentTime + delta, 0, vid.duration);
+        break;
+      }
+      case "video-mute":
+        ADAPTER.conf.muted = vid.muted = !vid.muted;
+        saveConf({ muted: vid.muted });
+        break;
+      case "video-volume-up":
+      case "video-volume-down":
+        ADAPTER.conf.volume = clamp(Math.round(vid.volume * 100) + (action.endsWith("up") ? 5 : -5), 0, 100);
+        vid.volume = ADAPTER.conf.volume / 100;
+        ADAPTER.conf.muted = vid.muted = false;
+        saveConf({ volume: ADAPTER.conf.volume, muted: false });
+        break;
+    }
+    this.sync(vid);
+    this.ui.root.classList.add("bifm-vid-ctl-reveal");
+    clearTimeout(this.revealTimer);
+    this.revealTimer = setTimeout(() => this.ui.root.classList.remove("bifm-vid-ctl-reveal"), 1500);
+  }
+
+  private sync(vid: HTMLVideoElement) {
+    this.flushUI({ time: vid.currentTime, duration: vid.duration });
+  }
+
   private getVideoElement(): HTMLVideoElement | null {
-    return this.root.querySelector<HTMLVideoElement>(`#${this.elementID}`);
+    return this.element ?? null;
   }
 
 }

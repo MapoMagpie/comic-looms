@@ -825,6 +825,15 @@ export function styleCSS() {
 .ehvp-help-panel > div strong {
   color: #d76d00;
 }
+.bifm-animation-control {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 2010; display: flex; align-items: center; gap: 10px;
+  width: min(560px, 80vw); padding: 6px 12px; border-radius: 8px;
+  background: #000b; color: #fff; font: 12px sans-serif;
+}
+.bifm-animation-control input { flex: 1; min-width: 0; }
+.bifm-animation-control button { color: #fff; background: transparent; border: 0; cursor: pointer; }
+.bifm-animation-control span { white-space: nowrap; }
 .bifm-vid-ctl {
   position: fixed;
   z-index: 2010;
@@ -840,9 +849,9 @@ export function styleCSS() {
 .bifm-vid-ctl > div > * {
   margin: 0 0.1em;
 }
-.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-btn,
-.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-span,
-.bifm-vid-ctl:not(:hover) #bifm-vid-ctl-volume
+.bifm-vid-ctl:not(:hover):not(.bifm-vid-ctl-reveal) .bifm-vid-ctl-btn,
+.bifm-vid-ctl:not(:hover):not(.bifm-vid-ctl-reveal) .bifm-vid-ctl-span,
+.bifm-vid-ctl:not(:hover):not(.bifm-vid-ctl-reveal) #bifm-vid-ctl-volume
 {
   opacity: 0;
 }
@@ -870,10 +879,10 @@ export function styleCSS() {
   height: 0.2em;
   background-color: #333333ee;
 }
-.bifm-vid-ctl:hover {
+.bifm-vid-ctl:hover, .bifm-vid-ctl-reveal {
   background-color: var(--ehvp-theme-bg-color);
 }
-.bifm-vid-ctl:hover #bifm-vid-ctl-pg {
+.bifm-vid-ctl:hover #bifm-vid-ctl-pg, .bifm-vid-ctl-reveal #bifm-vid-ctl-pg {
   height: 0.8em;
 }
 .bifm-vid-ctl-pg-inner {
