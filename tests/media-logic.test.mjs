@@ -10,7 +10,7 @@ globalThis.GM = { xmlHttpRequest: options => { Promise.resolve().then(() => gmRe
 globalThis.GM_getValue = key => storage.get(key);
 globalThis.GM_setValue = (key,value) => storage.set(key,value);
 globalThis.window = { screen:{width:1920,height:1080,availHeight:1080}, btoa, location:{href:'https://x.com/home'} };
-globalThis.document = {cookie:'twid=u%3D123',scripts:[]};
+globalThis.document = {cookie:'twid=u%3D123',scripts:[],querySelectorAll:()=>[]};
 globalThis.location = {origin:'https://x.com',hostname:'x.com'};
 globalThis.PerformanceObserver = undefined;
 
@@ -20,6 +20,27 @@ const { AnimationControl } = await import('../src/ui/animation-control.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
 const { mediaActions, supportsMediaAction } = await import('../src/ui/media-actions.ts');
 const { actionQueryId, performTweetAction, checkActionResult } = await import('../src/platform/matchers/twitter-actions.ts');
+
+test('thumbnail actions use native controls and leave unrelated tweets untouched', async () => {
+  const previous = document.querySelectorAll;
+  let liked = false, bookmarked = false, clicks = 0;
+  const article = { querySelector(selector) {
+    if (selector.includes(' time')) return { closest: () => ({ getAttribute: () => '/user/status/555' }) };
+    if (selector === '[data-testid="unlike"]') return liked ? {} : null;
+    if (selector === '[data-testid="removeBookmark"]') return bookmarked ? {} : null;
+    if (selector === 'button[data-testid="like"]') return { click() { clicks++; liked = true; } };
+    if (selector === 'button[data-testid="bookmark"]') return { click() { clicks++; bookmarked = true; } };
+    return null;
+  } };
+  document.querySelectorAll = () => [article];
+  try {
+    const noDirectRequest = () => { throw new Error('Native actions must not send a duplicate API mutation'); };
+    await performTweetAction('FavoriteTweet', '555', noDirectRequest);
+    await performTweetAction('CreateBookmark', '555', noDirectRequest);
+    await performTweetAction('FavoriteTweet', '555', noDirectRequest);
+    assert.equal(liked, true); assert.equal(bookmarked, true); assert.equal(clicks, 2);
+  } finally { document.querySelectorAll = previous; }
+});
 
 test('tweet actions resolve current bundle IDs, send matching POST bodies and never retry failures', async () => {
   const previous = { gmRequest, scripts: document.scripts };

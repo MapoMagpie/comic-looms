@@ -67,7 +67,7 @@ tweet-timeline query ID).
 - Missing controls are unknown; they must not clear a known state. Updates in other
   tabs or in collapsed menus without a visible state change are not observed.
 - Existing thumbnail actions remain add-only and validate HTTP/GraphQL success before
-  marking completion. Direct API actions do not force a native React UI refresh.
+  marking completion. For a rendered tweet, thumbnail actions click its native X button so React updates the page too. If the native control is absent, use a current-bundle GraphQL descriptor via GM.xmlHttpRequest; this fallback cannot force an unmounted React view to refresh. Mutations are never automatically retried.
 - Test multiple photos, repeated tweets across chapters, native rerenders, and error
   responses. The automated tests cover state extraction and simulated DOM transitions;
   they do not click real account likes/bookmarks.
