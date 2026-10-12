@@ -1,7 +1,7 @@
 import { GM_XHR } from "../../utils/query";
 
 type JsonObject = Record<string, unknown>;
-export type TwitterList = { id: string; name: string };
+export type TwitterList = { id: string; name: string; cover?: string };
 export type ListOperation = "ListsManagementPageTimeline" | "PinnedTimelines";
 export type ListRequest = { queryId: string; operation: ListOperation; features: Record<string, boolean>; variables: JsonObject };
 const CACHE_KEY = "comicLoomsAutoListGraphQLRequest";
@@ -79,10 +79,23 @@ export function parseListRequest(raw: string, origin: string): ListRequest | und
   } catch { return undefined; }
 }
 
+function listCover(item: JsonObject): string | undefined {
+  for (const key of ["custom_banner_media", "banner_media", "default_banner_media"]) {
+    const banner = item[key];
+    if (!object(banner) || !object(banner.media_info)) continue;
+    const url = banner.media_info.original_img_url;
+    if (typeof url === "string" && /^https?:\/\//.test(url)) return url;
+  }
+  return undefined;
+}
+
 function listInfo(item: JsonObject): TwitterList | undefined {
   const id = item.id_str ?? item.rest_id ?? item.id;
   if (typeof id !== "string" || !/^\d+$/.test(id)) return;
-  return { id, name: typeof item.name === "string" ? item.name : `List ${id}` };
+  const list: TwitterList = { id, name: typeof item.name === "string" ? item.name : `List ${id}` };
+  const cover = listCover(item);
+  if (cover) list.cover = cover;
+  return list;
 }
 
 function listSection(item: JsonObject): "owned" | "recommended" | undefined {
