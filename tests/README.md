@@ -27,8 +27,8 @@ with Pillow with delays of 100, 200, 100 and 300 ms; the static WebP is one red 
   remain after closing. Unsupported decoders retain the normal original image.
 - Context menu: 8 media actions for video, 5 for animation, none for static images
   or grid mode. X “GIF” posts are usually videos and use the video path.
-- On X home, keep the loading view until list discovery finishes, then show the
-  original three chapters and all discovered lists together (as in 4.16.0.1). With no
+- On X home, show the first discovered List batch with the
+  original three chapters; append later pages while the first batch is usable. If all sources are slow, release the base chapters after 1.5 seconds. With no
   cached management request, check pinned lists; visit the Lists page, then reopen
   Comic Looms on home and check owned/subscribed lists. Check names, duplicates,
   recommendation exclusion, list-specific pagination and switching accounts.
@@ -39,14 +39,14 @@ with Pillow with delays of 100, 200, 100 and 300 ms; the static WebP is one red 
   and results are requested using the current login, never copied from another account.
 - Test upgrading with the old cache shape `{queryId, features, savedAt}`. Delay
   the main bundle and later management pages: the discovery helper should deliver
-  pages without blocking each other, while the homepage buffers them for one UI update.
+  pages without blocking each other, while the homepage renders the first available batch and later appends subsequent batches.
   Reopen the reader and verify the same main bundle is reused.
 
 ## Current limits
 
 The user tested 4.16.1.257.3 after clearing site data: pinned lists appeared after
 about one second on first login; all lists appeared after visiting X's Lists page.
-The subsequent change to present chapters together still needs a browser check.
+The user subsequently verified the .4 batch presentation. The .6 progressive presentation and native-page action synchronization still need live browser checks.
 Agent-driven authenticated X testing and the media browser regression page remain
 blocked/unrun. The X fixture response shapes are synthetic, based on the
 provided script; upstream API changes can require parser updates. Feature values
@@ -57,3 +57,17 @@ reads script URLs from the document and resource timing; it does not evaluate
 downloaded code. Management pagination is capped at 20 requests. Per-list tweet
 fetching reuses the existing upstream TwitterListsAPI (including its existing
 tweet-timeline query ID).
+
+## Native X action synchronization
+
+- Existing favorited/bookmarked response fields initialize thumbnail actions for the
+  exact media tweet, including retweets. The same tweet shares actions across thumbnails.
+- In the same tab, native tweet controls update thumbnail state when their data-testid
+  changes (like/unlike, bookmark/removeBookmark). Test both adding and removing.
+- Missing controls are unknown; they must not clear a known state. Updates in other
+  tabs or in collapsed menus without a visible state change are not observed.
+- Existing thumbnail actions remain add-only and validate HTTP/GraphQL success before
+  marking completion. Direct API actions do not force a native React UI refresh.
+- Test multiple photos, repeated tweets across chapters, native rerenders, and error
+  responses. The automated tests cover state extraction and simulated DOM transitions;
+  they do not click real account likes/bookmarks.

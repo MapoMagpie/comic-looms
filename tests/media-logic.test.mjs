@@ -116,6 +116,47 @@ test('List pagination tolerates partial errors, stops repeated cursors, invalida
   } finally { globalThis.fetch=originalFetch; document.cookie='twid=u%3D123'; }
 });
 
+test('slow discovery releases base chapters within budget and continues with the real cursor', async () => {
+  const previous = gmRequest;
+  const entries = new Map([['comicLoomsAutoListGraphQLRequest', JSON.stringify({ queryId: 'budget', features: {}, savedAt: Date.now() })]]);
+  globalThis.localStorage = { getItem: key => entries.get(key), removeItem: key => entries.delete(key) };
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const cursors = [];
+  gmRequest = async options => {
+    const variables = JSON.parse(new URL(options.url).searchParams.get('variables'));
+    cursors.push(variables.cursor);
+    await gate;
+    options.onload({ status: 200, responseText: JSON.stringify({ data: {
+      OwnedSubscribedList: [{ __typename: 'List', id_str: variables.cursor ? '92' : '91', name: 'List' }],
+      ...(variables.cursor ? {} : { cursor: { cursorType: 'Bottom', value: 'confirmed-next' } }),
+    } }) });
+  };
+  const iterator = streamHomeLists(() => new Headers(), 20);
+  let timer;
+  try {
+    const first = await Promise.race([iterator.next(), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Budget did not release chapters')), 500); })]);
+    clearTimeout(timer);
+    assert.deepEqual(first.value, []);
+    assert.deepEqual(cursors, [undefined], 'cannot guess a dependent page cursor');
+    release();
+    assert.equal((await iterator.next()).value[0].id, '91');
+    assert.equal((await iterator.next()).value[0].id, '92');
+    assert.equal((await iterator.next()).done, true);
+    assert.deepEqual(cursors, [undefined, 'confirmed-next']);
+    let calls = 0;
+    gmRequest = async options => {
+      calls++;
+      options.onload({ status: 200, responseText: JSON.stringify({ data: {
+        OwnedSubscribedList: [{ __typename: 'List', id_str: '93', name: 'Partial' }],
+        cursor: { cursorType: 'Bottom', value: 'must-not-follow' },
+      }, errors: [{ message: 'Not authorized' }] }) });
+    };
+    assert.deepEqual(await fetchHomeLists(() => new Headers()), []);
+    assert.equal(calls, 1, 'permission errors must stop prefetch even with partial data');
+  } finally { clearTimeout(timer); release(); await iterator.return(); gmRequest = previous; }
+});
+
 class Element extends EventTarget {
   style = {}; textContent = ''; innerHTML = ''; hidden = false; isConnected = true;
   attributes = new Map(); children = []; className = ''; id = '';
