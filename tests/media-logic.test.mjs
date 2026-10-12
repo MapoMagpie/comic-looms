@@ -20,6 +20,40 @@ const { AnimationControl } = await import('../src/ui/animation-control.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
 const { mediaActions, supportsMediaAction } = await import('../src/ui/media-actions.ts');
 const { actionQueryId, performTweetAction, checkActionResult } = await import('../src/platform/matchers/twitter-actions.ts');
+const { currentTwitterBundle } = await import('../src/platform/matchers/twitter-bundle.ts');
+
+test('List discovery and actions share an in-flight bundle; failed downloads can be retried', async () => {
+  const previous = { gmRequest, scripts: document.scripts, localStorage: globalThis.localStorage };
+  document.scripts = [{ src: 'https://abs.twimg.com/responsive-web/client-web/main.shared.js' }];
+  globalThis.localStorage = { getItem: () => null };
+  let release, downloads = 0;
+  const gate = new Promise(resolve => { release = resolve; });
+  gmRequest = async options => {
+    if (options.url.endsWith('.js')) {
+      downloads++;
+      await gate;
+      options.onload({ status: 200, responseText: 'queryId:"pin-shared",operationName:"PinnedTimelines",metadata:{featureSwitches:[]};queryId:"bookmark-shared",operationName:"CreateBookmark"' });
+    } else {
+      options.onload({ status: 200, responseText: '{"data":{"tweet_bookmark_put":"Done"}}' });
+    }
+  };
+  try {
+    const lists = fetchHomeLists(() => new Headers());
+    const action = performTweetAction('CreateBookmark', '123', () => new Headers());
+    await Promise.resolve();
+    assert.equal(downloads, 1);
+    release();
+    await Promise.all([lists, action]);
+    await currentTwitterBundle();
+    assert.equal(downloads, 1);
+    document.scripts = [{ src: 'https://abs.twimg.com/responsive-web/client-web/main.failed.js' }];
+    gmRequest = options => { downloads++; options.onerror(); };
+    await assert.rejects(currentTwitterBundle(), /request failed/);
+    gmRequest = options => { downloads++; options.onload({ status: 200, responseText: 'recovered' }); };
+    assert.equal((await currentTwitterBundle()).text, 'recovered');
+    assert.equal(downloads, 3);
+  } finally { release(); gmRequest = previous.gmRequest; document.scripts = previous.scripts; globalThis.localStorage = previous.localStorage; }
+});
 
 test('thumbnail actions use native controls and leave unrelated tweets untouched', async () => {
   const previous = document.querySelectorAll;
