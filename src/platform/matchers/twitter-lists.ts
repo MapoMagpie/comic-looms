@@ -1,4 +1,5 @@
 import { GM_XHR } from "../../utils/query";
+import { currentTwitterBundle } from "./twitter-bundle";
 
 type JsonObject = Record<string, unknown>;
 export type TwitterList = { id: string; name: string; cover?: string };
@@ -221,19 +222,10 @@ function requestText(url: string, headers: Record<string, string> = {}): Promise
   }));
 }
 
-const bundles = new Map<string, Promise<string>>();
 async function discoverPinned(): Promise<ListRequest | undefined> {
-  const urls = [...Array.from(document.scripts).map(script => script.src),
-    ...performance.getEntriesByType("resource").map(entry => entry.name)];
-  const src = urls.find(src => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(src));
-  if (!src) return;
-  let pending = bundles.get(src);
-  if (!pending) {
-    pending = requestText(src).catch(error => { bundles.delete(src); throw error; });
-    bundles.set(src, pending);
-  }
-  const bundle = await pending;
-  return pinnedRequestFromBundle(bundle, Array.from(document.scripts).filter(script => !script.src).map(script => script.textContent || "").join("\n"));
+  const bundle = await currentTwitterBundle();
+  if (!bundle) return;
+  return pinnedRequestFromBundle(bundle.text, Array.from(document.scripts).filter(script => !script.src).map(script => script.textContent || "").join("\n"));
 }
 
 function listRequestURL(request: ListRequest, cursor?: string) {

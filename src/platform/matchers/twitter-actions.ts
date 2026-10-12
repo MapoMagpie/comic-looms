@@ -1,7 +1,7 @@
 import { GM_XHR } from "../../utils/query";
+import { currentTwitterBundle, invalidateTwitterBundle } from "./twitter-bundle";
 
 export type TweetOperation = "FavoriteTweet" | "CreateBookmark";
-const bundles = new Map<string, Promise<string>>();
 
 function tweetArticle(id: string): Element | undefined {
   return Array.from(document.querySelectorAll('article[data-testid="tweet"]')).find(article => {
@@ -46,18 +46,11 @@ function request(url: string, headers: Record<string, string> = {}, data?: strin
 }
 
 async function currentQuery(operation: TweetOperation): Promise<{ queryId: string; src: string }> {
-  const urls = [...Array.from(document.scripts).map(script => script.src),
-    ...performance.getEntriesByType("resource").map(entry => entry.name)];
-  const src = urls.find(url => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(url));
-  if (!src) throw new Error("X action definition unavailable; refresh X and retry");
-  let pending = bundles.get(src);
-  if (!pending) {
-    pending = request(src).catch(error => { bundles.delete(src); throw error; });
-    bundles.set(src, pending);
-  }
-  const queryId = actionQueryId(await pending, operation);
+  const bundle = await currentTwitterBundle();
+  if (!bundle) throw new Error("X action definition unavailable; refresh X and retry");
+  const queryId = actionQueryId(bundle.text, operation);
   if (!queryId) throw new Error(`Current X bundle has no ${operation} definition; refresh X and retry`);
-  return { queryId, src };
+  return { queryId, src: bundle.src };
 }
 
 export function checkActionResult(text: string) {
@@ -78,7 +71,7 @@ export async function performTweetAction(operation: TweetOperation, tweetID: str
     checkActionResult(text);
   } catch (error) {
     // Never automatically retry a mutation: the server may already have applied it.
-    bundles.delete(src);
+    if (error instanceof Error && error.message === "X action HTTP 404") invalidateTwitterBundle(src);
     throw error;
   }
 }
