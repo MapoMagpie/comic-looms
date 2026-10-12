@@ -259,7 +259,7 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
           const api = new TwitterListsAPI();
           api.listID = list.id;
           this.listAPIs.set(id, api);
-          return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`);
+          return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`, list.cover);
         });
         chapters.push(...listChapters);
       }
