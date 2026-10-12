@@ -19,6 +19,36 @@ const { VideoControl } = await import('../src/ui/video-control.ts');
 const { AnimationControl } = await import('../src/ui/animation-control.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
 const { mediaActions, supportsMediaAction } = await import('../src/ui/media-actions.ts');
+const { actionQueryId, performTweetAction, checkActionResult } = await import('../src/platform/matchers/twitter-actions.ts');
+
+test('tweet actions resolve current bundle IDs, send matching POST bodies and never retry failures', async () => {
+  const previous = { gmRequest, scripts: document.scripts };
+  const src = 'https://abs.twimg.com/responsive-web/client-web/main.actions.js';
+  document.scripts = [{ src }];
+  const calls = [];
+  let status = 200;
+  gmRequest = options => {
+    calls.push(options);
+    options.onload({ status: options.method === 'GET' ? 200 : status, responseText: options.method === 'GET'
+      ? 'queryId:"new-bookmark",operationName:"CreateBookmark";queryId:"new-like",operationName:"FavoriteTweet"'
+      : '{"data":{"tweet_bookmark_put":"Done"}}' });
+  };
+  try {
+    assert.equal(actionQueryId('queryId:"wrong",operationName:"DeleteBookmark"', 'CreateBookmark'), undefined);
+    await performTweetAction('CreateBookmark', '12345', () => new Headers());
+    assert.equal(calls[1].url, 'https://x.com/i/api/graphql/new-bookmark/CreateBookmark');
+    assert.deepEqual(JSON.parse(calls[1].data), { variables: { tweet_id: '12345' }, queryId: 'new-bookmark' });
+    assert.equal(calls[1].method, 'POST');
+    status = 404;
+    await assert.rejects(performTweetAction('FavoriteTweet', '12345', () => new Headers()), /HTTP 404/);
+    assert.equal(calls.length, 3, 'one shared bundle and exactly one request per action');
+    assert.throws(() => checkActionResult('{"data":{},"errors":[{"message":"Denied"}]}'), /not confirmed/);
+    assert.throws(() => checkActionResult('{}'), /not confirmed/);
+    status = 200;
+    await performTweetAction('CreateBookmark', '12345', () => new Headers());
+    assert.equal(calls[3].method, 'GET', 'a later user retry refreshes the descriptor after failure');
+  } finally { gmRequest = previous.gmRequest; document.scripts = previous.scripts; }
+});
 
 test('List discovery accepts same-origin descriptors only and strips sensitive/stale variables', () => {
   const url = new URL('/i/api/graphql/live-query/ListsManagementPageTimeline',location.origin);

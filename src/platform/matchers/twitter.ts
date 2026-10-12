@@ -8,6 +8,7 @@ import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 import { streamHomeLists, observeListRequests } from "./twitter-lists";
 import { applyTweetState, readTweetState, trackTweetActions } from "./twitter-action-state";
+import { performTweetAction } from "./twitter-actions";
 
 observeListRequests();
 
@@ -428,20 +429,10 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     let actionBookmark: NodeAction | undefined;
     if (tweetID) {
       actionLike = new NodeAction("♥", "like this tweet", async () => {
-        const response = await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
-          "headers": createHeader(this.uuid),
-          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"lI07N6Otwv1PhnEgXILM7A\"}",
-          "method": "POST", "mode": "cors"
-        });
-        await this.checkActionResponse(response);
+        await performTweetAction("FavoriteTweet", tweetID, () => createHeader(this.uuid));
       });
       actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
-        const response = await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
-          "headers": createHeader(this.uuid),
-          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"aoDbu3RHznuiSkQ9aNM67Q\"}",
-          "method": "POST", "mode": "cors"
-        });
-        await this.checkActionResponse(response);
+        await performTweetAction("CreateBookmark", tweetID, () => createHeader(this.uuid));
       });
       const actions = { like: actionLike, bookmark: actionBookmark };
       applyTweetState(actions, readTweetState(item, tweetID));
@@ -449,12 +440,6 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
       this.actionsByTweet.set(tweetID, [actionLike, actionBookmark]);
     }
     return [actionLike, actionBookmark].filter((action): action is NodeAction => action !== undefined);
-  }
-
-  private async checkActionResponse(response: Response) {
-    if (!response.ok) throw new Error(`X action HTTP ${response.status}`);
-    const result = await response.json();
-    if (result.errors?.length || !result.data) throw new Error("X action was not confirmed");
   }
 
   private mediaNode(media: Media, index: number, actions: NodeAction[]) {
