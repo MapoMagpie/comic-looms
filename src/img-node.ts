@@ -33,7 +33,21 @@ export class NodeAction {
   description: string;
   func: (node: ImageNode) => Promise<void>;
   reueable: boolean = false;
-  done: boolean = false;
+  private completed = false;
+  private buttons = new Set<WeakRef<HTMLButtonElement>>();
+  get done() { return this.completed; }
+  set done(value: boolean) {
+    this.completed = value;
+    for (const ref of this.buttons) {
+      const button = ref.deref();
+      if (!button?.isConnected) this.buttons.delete(ref);
+      else button.classList.toggle("img-node-action-btn-done", value);
+    }
+  }
+  bind(button: HTMLButtonElement) {
+    this.buttons.add(new WeakRef(button));
+    button.classList.toggle("img-node-action-btn-done", this.done);
+  }
   processing: boolean = false;
   constructor(icon: string, description: string, func: (node: ImageNode) => Promise<void>, reueable?: boolean) {
     this.icon = icon;
@@ -144,11 +158,10 @@ export default class ImageNode {
       for (const action of this.actions) {
         const actionElem = document.createElement("button");
         actionElem.classList.add("img-node-action-btn");
-        if (action.done) {
-          actionElem.classList.add("img-node-action-btn-done");
-        }
+        action.bind(actionElem);
         actionElem.textContent = action.icon;
         actionElem.addEventListener("click", (ev) => {
+          if (action.processing || (action.done && !action.reueable)) return;
           const target = ev.target as HTMLButtonElement;
           target.disabled = true;
           target.classList.add("img-node-action-btn-processing");

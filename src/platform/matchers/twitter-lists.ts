@@ -257,7 +257,7 @@ async function fetchListPage(request: ListRequest, headers: () => Headers, curso
   const json = JSON.parse(text);
   if (!json.data) throw new Error("X lists response missing data");
   const lists = collectLists(json.data, request.operation);
-  if (!lists.length && Array.isArray(json.errors) && json.errors.some(isFatalListError)) throw new Error("X lists GraphQL error");
+  if (Array.isArray(json.errors) && json.errors.some(isFatalListError)) throw new Error("X lists GraphQL error");
   const next = request.operation === "ListsManagementPageTimeline" ? listCursor(json.data) : undefined;
   return { lists, next };
 }
@@ -306,7 +306,7 @@ async function loadHomeLists(headers: () => Headers, account: string | undefined
   results.forEach(result => { if (result.status === "rejected") console.debug("Comic Looms: pinned lists unavailable", result.reason); });
 }
 
-export async function* streamHomeLists(headers: () => Headers): AsyncGenerator<TwitterList[]> {
+export async function* streamHomeLists(headers: () => Headers, initialWait = 1500): AsyncGenerator<TwitterList[]> {
   const account = accountID();
   const batches: TwitterList[][] = [];
   const seen = new Set<string>();
@@ -314,13 +314,22 @@ export async function* streamHomeLists(headers: () => Headers): AsyncGenerator<T
   let finished = false;
   const emit = (lists: TwitterList[]) => { batches.push(lists); wake?.(); };
   const pending = loadHomeLists(headers, account, emit).finally(() => { finished = true; wake?.(); });
-  while (!finished || batches.length) {
-    if (!batches.length) await new Promise<void>(resolve => { wake = resolve; });
-    if (accountID() !== account) break;
-    const batch = (batches.shift() ?? []).filter(list => !seen.has(list.id));
-    batch.forEach(list => seen.add(list.id));
-    if (batch.length) yield batch;
-  }
+  // An empty first batch releases the base chapters if all list sources are slow.
+  let released = false;
+  const timer = setTimeout(() => emit([]), initialWait);
+  try {
+    while (!finished || batches.length) {
+      if (!batches.length) await new Promise<void>(resolve => { wake = resolve; });
+      if (accountID() !== account) break;
+      const batch = (batches.shift() ?? []).filter(list => !seen.has(list.id));
+      batch.forEach(list => seen.add(list.id));
+      if (batch.length || !released) {
+        released = true;
+        clearTimeout(timer);
+        yield batch;
+      }
+    }
+  } finally { clearTimeout(timer); }
   await pending;
 }
 

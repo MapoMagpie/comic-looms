@@ -7,6 +7,7 @@ import { transactionId, uuid } from "../../utils/random";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 import { streamHomeLists, observeListRequests } from "./twitter-lists";
+import { applyTweetState, readTweetState, trackTweetActions } from "./twitter-action-state";
 
 observeListRequests();
 
@@ -245,7 +246,7 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
   myID?: string;
 
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
-    const chapters = [
+    let chapters = [
       new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
       new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
@@ -262,12 +263,13 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
           return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`, list.cover);
         });
         chapters.push(...listChapters);
+        if (chapters.length) yield chapters;
+        chapters = [];
       }
     } catch (error) {
       evLog("debug", "Unable to discover X home lists", error);
     }
-    // Keep the loading view until discovery finishes, then present all chapters together.
-    yield chapters;
+    if (chapters.length) yield chapters;
   }
   async next(chapter: Chapter, listCursor?: string): Promise<[Item[], string | undefined]> {
     const listAPI = this.listAPIs.get(chapter.id);
@@ -396,7 +398,7 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
         evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
         continue;
       }
-      const actions = this.tweetActions(tweetID);
+      const actions = this.tweetActions(tweetID, item);
       this.postCount++;
       if (ADAPTER.conf.reverseMultipleImagesPost) {
         mediaList.reverse();
@@ -418,26 +420,41 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     return list;
   }
 
-  private tweetActions(tweetID?: string): NodeAction[] {
+  private actionsByTweet = new Map<string, NodeAction[]>();
+
+  private tweetActions(tweetID: string | undefined, item: Item): NodeAction[] {
+    if (tweetID && this.actionsByTweet.has(tweetID)) return this.actionsByTweet.get(tweetID)!;
     let actionLike: NodeAction | undefined;
     let actionBookmark: NodeAction | undefined;
     if (tweetID) {
       actionLike = new NodeAction("♥", "like this tweet", async () => {
-        await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
+        const response = await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
           "headers": createHeader(this.uuid),
           "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"lI07N6Otwv1PhnEgXILM7A\"}",
           "method": "POST", "mode": "cors"
         });
+        await this.checkActionResponse(response);
       });
       actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
-        await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
+        const response = await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
           "headers": createHeader(this.uuid),
           "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"aoDbu3RHznuiSkQ9aNM67Q\"}",
           "method": "POST", "mode": "cors"
         });
+        await this.checkActionResponse(response);
       });
+      const actions = { like: actionLike, bookmark: actionBookmark };
+      applyTweetState(actions, readTweetState(item, tweetID));
+      trackTweetActions(tweetID, actions);
+      this.actionsByTweet.set(tweetID, [actionLike, actionBookmark]);
     }
     return [actionLike, actionBookmark].filter((action): action is NodeAction => action !== undefined);
+  }
+
+  private async checkActionResponse(response: Response) {
+    if (!response.ok) throw new Error(`X action HTTP ${response.status}`);
+    const result = await response.json();
+    if (result.errors?.length || !result.data) throw new Error("X action was not confirmed");
   }
 
   private mediaNode(media: Media, index: number, actions: NodeAction[]) {
