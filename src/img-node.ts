@@ -49,6 +49,7 @@ export default class ImageNode {
   href: string;
   title: string;
   onclick?: (event: MouseEvent) => void;
+  openEmbeddedMedia?: () => void;
   imgElement?: HTMLImageElement;
   canvasElement?: HTMLCanvasElement;
   canvasCtx?: CanvasRenderingContext2D;
@@ -125,6 +126,14 @@ export default class ImageNode {
     this.canvasCtx = this.canvasElement.getContext("2d")!;
     this.canvasCtx.fillStyle = "#aaa";
     this.canvasCtx.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+    // Embedded players use an image poster, so its MIME type cannot identify the video.
+    if (this.openEmbeddedMedia) {
+      const tip = OVERLAY_TIP.cloneNode(true) as HTMLElement;
+      tip.firstChild!.textContent = "VIDEO";
+      tip.title = "Embedded video";
+      tip.style.pointerEvents = "none";
+      this.root.appendChild(tip);
+    }
     if (this.onclick) {
       anchor.addEventListener("click", (event) => {
         event.preventDefault();
@@ -149,6 +158,9 @@ export default class ImageNode {
         }
         actionElem.textContent = action.icon;
         actionElem.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (action.processing || (action.done && !action.reueable)) return;
           const target = ev.target as HTMLButtonElement;
           target.disabled = true;
           target.classList.add("img-node-action-btn-processing");
@@ -242,7 +254,7 @@ export default class ImageNode {
   render(onfailed: Onfailed, onResize: OnResize, force?: boolean) {
     this.debouncer.addEvent("IMG-RENDER", () => {
       if (!this.imgElement) return onfailed("element undefined");
-      let justThumbnail = !force && (!ADAPTER.conf.hdThumbnails || !this.blobSrc);
+      let justThumbnail = !!this.openEmbeddedMedia || (!force && (!ADAPTER.conf.hdThumbnails || !this.blobSrc));
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("ugoira") || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
