@@ -285,10 +285,10 @@ export function styleCSS() {
 .bifm-container > div {
   box-sizing: border-box;
 }
-.bifm-container > div:has(> .bifm-embedded-video) {
+.bifm-container > div:not(.bifm-node-hide):has(> .bifm-embedded-video) {
   position: relative;
 }
-.bifm-container > div:has(> .bifm-embedded-video)::after {
+.bifm-container > div:not(.bifm-node-hide):has(> .bifm-embedded-video)::after {
   content: "";
   position: absolute;
   left: 50%;

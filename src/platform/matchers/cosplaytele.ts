@@ -4,7 +4,7 @@ import { Chapter } from "../../page-fetcher";
 import { IMGFetcher } from "../../img-fetcher";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
-import { cosplayAlbums, cosplayImages, cosplayPlayers, videosFirst, CosplayMedia } from "./cosplaytele-parser";
+import { cosplayAlbums, cosplayCover, cosplayImages, cosplayPlayers, videosFirst, CosplayMedia } from "./cosplaytele-parser";
 
 const PLAYER_CARD = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#171717"/><text x="320" y="165" text-anchor="middle" fill="white" font-size="34">JW PLAYER VIDEO</text><text x="320" y="215" text-anchor="middle" fill="white" font-size="22">Hover thumbnail and click ▶ to play</text></svg>';
 const PLAYER_THUMB = `data:image/svg+xml,${encodeURIComponent(PLAYER_CARD)}`;
@@ -14,12 +14,6 @@ if (location.hostname === "cossora.stream" && location.pathname.startsWith("/emb
   let parentOrigin = "";
   try { parentOrigin = new URL(document.referrer).origin; } catch { /* no parent */ }
   if (/^https:\/\/(?:www\.)?cosplaytele\.com$/.test(parentOrigin)) {
-    window.addEventListener("message", event => {
-      if (event.source !== window.parent || event.origin !== parentOrigin || event.data?.type !== "comic-looms-get-poster") return;
-      const preview = document.querySelector<HTMLElement>(".jw-preview");
-      const poster = document.querySelector("video")?.poster || preview?.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
-      if (poster && /^https:\/\//.test(poster)) window.parent.postMessage({ type: "comic-looms-poster", poster }, parentOrigin);
-    });
     window.addEventListener("keydown", event => {
       if (event.key !== "Escape") return;
       event.preventDefault(); event.stopImmediatePropagation();
@@ -29,32 +23,6 @@ if (location.hostname === "cossora.stream" && location.pathname.startsWith("/emb
 }
 
 let activePlayer: HTMLDialogElement | undefined;
-
-// Read only an already-present original player; do not load hidden player/ad frames.
-async function playerPoster(embed: string): Promise<string | undefined> {
-  const frame = Array.from(document.querySelectorAll<HTMLIFrameElement>(".entry-content iframe"))
-    .find(frame => frame.src === embed);
-  if (!frame?.contentWindow) return undefined;
-  return new Promise(resolve => {
-    const finish = (poster?: string) => {
-      window.removeEventListener("message", receive);
-      clearInterval(retry); clearTimeout(timeout);
-      resolve(poster);
-    };
-    const receive = (event: MessageEvent) => {
-      if (event.origin !== "https://cossora.stream" || event.source !== frame.contentWindow || event.data?.type !== "comic-looms-poster") return;
-      try {
-        const url = new URL(event.data.poster);
-        if (url.protocol === "https:" && (url.hostname === "cossora.stream" || url.hostname.endsWith(".cossora.stream"))) finish(url.href);
-      } catch { /* invalid poster */ }
-    };
-    const request = () => frame.contentWindow?.postMessage({ type: "comic-looms-get-poster" }, "https://cossora.stream");
-    const retry = setInterval(request, 200);
-    const timeout = setTimeout(() => finish(), 1200);
-    window.addEventListener("message", receive);
-    request();
-  });
-}
 
 function openPlayer(url: string, sourcePage: string) {
   if (activePlayer?.open) return;
@@ -122,11 +90,8 @@ class CosplayteleMatcher extends BaseMatcher<CosplayMedia[]> {
     const videos: CosplayMedia[] = [];
     if (!ADAPTER.conf.excludeVideo) {
       const players = cosplayPlayers(doc, chapter.source);
-      const posters = await Promise.all(players.map(playerPoster));
+      const thumbnail = cosplayCover(doc, chapter.source) || PLAYER_THUMB;
       for (const [index, embed] of players.entries()) {
-        const poster = posters[index];
-        const cover = doc.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content;
-        const thumbnail = poster || (cover && /^https:\/\//.test(cover) ? cover : images[0]?.thumbnail) || PLAYER_THUMB;
         videos.push({ url: thumbnail === PLAYER_THUMB ? DEFAULT_THUMBNAIL : thumbnail, thumbnail,
           title: `JW Player ${index + 1} — hover and click ▶ (stream, not a download)`, embed, sourcePage: chapter.source });
       }
@@ -152,7 +117,9 @@ class CosplayteleMatcher extends BaseMatcher<CosplayMedia[]> {
   }
 
   async fetchImageData(imf: IMGFetcher): Promise<[Blob, number] | null> {
-    if (/^https:\/\/cossora\.stream\/embed\//.test(imf.node.href) && imf.node.originSrc === DEFAULT_THUMBNAIL) {
+    // Posters display as normal image resources, like the original JW Player preview.
+    // Do not request them again through GM_xmlhttpRequest as downloadable media.
+    if (imf.node.openEmbeddedMedia) {
       return [new Blob([PLAYER_CARD], { type: "image/svg+xml" }), 200];
     }
     return super.fetchImageData(imf);
