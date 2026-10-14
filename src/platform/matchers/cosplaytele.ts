@@ -103,11 +103,12 @@ function openPlayer(url: string, sourcePage: string) {
 class CosplayteleMatcher extends BaseMatcher<CosplayMedia[]> {
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
     if (document.querySelector('.entry-content .gallery, .entry-content .wp-block-gallery') || cosplayPlayers(document, location.href).length) {
-      return [new Chapter(0, document.querySelector("h1.entry-title, h1")?.textContent?.trim() || document.title, location.href)];
+      yield [new Chapter(0, document.querySelector("h1.entry-title, h1")?.textContent?.trim() || document.title, location.href)];
+      return;
     }
     const albums = cosplayAlbums(document, location.href);
     if (!albums.length) throw new Error("Cosplaytele: no galleries found on this page");
-    return albums.map((album, id) => new Chapter(id, album.title, album.url, album.cover));
+    yield albums.map((album, id) => new Chapter(id, album.title, album.url, album.cover));
   }
 
   async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<CosplayMedia[]>> {
