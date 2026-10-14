@@ -842,6 +842,36 @@ export class BigImageFrameManager {
       return ugoiraElem;
     } else {
       const img = document.createElement("img");
+      if (imf.node.openEmbeddedMedia) {
+        img.classList.add("bifm-embedded-video");
+        img.style.cursor = "pointer";
+        img.tabIndex = 0;
+        img.setAttribute("role", "button");
+        img.setAttribute("aria-label", "Play embedded video");
+        img.addEventListener("mousedown", event => event.stopPropagation());
+        img.addEventListener("mouseup", event => event.stopPropagation());
+        img.addEventListener("click", event => {
+          event.preventDefault(); event.stopPropagation();
+          // object-fit: contain leaves clickable letterboxing inside the img element.
+          const bounds = img.getBoundingClientRect();
+          const scale = Math.min(bounds.width / img.naturalWidth, bounds.height / img.naturalHeight);
+          const width = img.naturalWidth * scale;
+          const height = img.naturalHeight * scale;
+          const x = event.clientX - bounds.left;
+          const y = event.clientY - bounds.top;
+          if (img.naturalWidth && (x < (bounds.width - width) / 2 || x > (bounds.width + width) / 2
+            || y < (bounds.height - height) / 2 || y > (bounds.height + height) / 2)) {
+            this.hidden(event);
+            return;
+          }
+          imf.node.openEmbeddedMedia!();
+        });
+        img.addEventListener("keydown", event => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault(); event.stopPropagation();
+          imf.node.openEmbeddedMedia!();
+        });
+      }
       // img.decoding = "auto";
       img.loading = "eager";
       img.classList.add("bifm-img");
