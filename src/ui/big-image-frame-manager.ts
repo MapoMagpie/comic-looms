@@ -824,6 +824,30 @@ export class BigImageFrameManager {
     return imgNode.offsetTop;
   }
 
+  private isAboveOrBelowPageZone(event: MouseEvent): boolean {
+    const zones = this.html.root.querySelectorAll<HTMLElement>(".img-land-left, .img-land-right");
+    return Array.from(zones).some(zone => {
+      const bounds = zone.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) return false;
+      // The return bands span the full viewport width, including above/below play.
+      return event.clientY < bounds.top || event.clientY > bounds.bottom;
+    });
+  }
+
+  private isVideoPreviewReturnArea(img: HTMLImageElement, event: MouseEvent): boolean {
+    if (this.isAboveOrBelowPageZone(event)) return true;
+    if (!img.naturalWidth || !img.naturalHeight) return true;
+    // Include letterboxing introduced by object-fit: contain.
+    const bounds = img.getBoundingClientRect();
+    const scale = Math.min(bounds.width / img.naturalWidth, bounds.height / img.naturalHeight);
+    const width = img.naturalWidth * scale;
+    const height = img.naturalHeight * scale;
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    return x < (bounds.width - width) / 2 || x > (bounds.width + width) / 2
+      || y < (bounds.height - height) / 2 || y > (bounds.height + height) / 2;
+  }
+
   newMediaNode(imf: IMGFetcher): MediaElement {
     if (imf.contentType?.startsWith("video")) {
       const vid = document.createElement("video");
@@ -857,7 +881,12 @@ export class BigImageFrameManager {
       const img = document.createElement("img");
       if (imf.node.openEmbeddedMedia) {
         img.classList.add("bifm-embedded-video");
-        img.style.cursor = "pointer";
+        img.style.cursor = "default";
+        const updateCursor = (event: MouseEvent) => {
+          img.style.cursor = this.isVideoPreviewReturnArea(img, event) ? "default" : "pointer";
+        };
+        img.addEventListener("mouseenter", updateCursor);
+        img.addEventListener("mousemove", updateCursor);
         img.tabIndex = 0;
         img.setAttribute("role", "button");
         img.setAttribute("aria-label", "Play embedded video");
@@ -865,15 +894,7 @@ export class BigImageFrameManager {
         img.addEventListener("mouseup", event => event.stopPropagation());
         img.addEventListener("click", event => {
           event.preventDefault(); event.stopPropagation();
-          // object-fit: contain leaves clickable letterboxing inside the img element.
-          const bounds = img.getBoundingClientRect();
-          const scale = Math.min(bounds.width / img.naturalWidth, bounds.height / img.naturalHeight);
-          const width = img.naturalWidth * scale;
-          const height = img.naturalHeight * scale;
-          const x = event.clientX - bounds.left;
-          const y = event.clientY - bounds.top;
-          if (img.naturalWidth && (x < (bounds.width - width) / 2 || x > (bounds.width + width) / 2
-            || y < (bounds.height - height) / 2 || y > (bounds.height + height) / 2)) {
+          if (this.isVideoPreviewReturnArea(img, event)) {
             this.hidden(event);
             return;
           }
@@ -890,7 +911,9 @@ export class BigImageFrameManager {
       img.classList.add("bifm-img");
       // img.draggable = !(conf.magnifier && conf.readMode !== "continuous");
       img.draggable = ADAPTER.conf.dragImageOut;
-      if (imf.stage === FetchState.DONE) {
+      if (imf.node.openEmbeddedMedia) {
+        img.src = imf.node.thumbnailSrc;
+      } else if (imf.stage === FetchState.DONE) {
         img.src = imf.node.blobSrc!;
       } else if (imf.node.thumbnailSrc) {
         img.src = imf.node.thumbnailSrc;
