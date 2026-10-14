@@ -7,12 +7,14 @@
     "test": "node --import ./tests/register.mjs --test tests/*.test.mjs",
     "dev": "node scripts/dev.mjs",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:cosplaytele": "node --test tests/cosplaytele.test.mjs"
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
     "@types/node": "^24.0.0",
     "@types/pica": "^9.0.5",
+    "linkedom": "^0.18.13",
     "typescript": "^5.7.3",
     "vite": "^8.3.0"
   },

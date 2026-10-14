@@ -285,6 +285,22 @@ export function styleCSS() {
 .bifm-container > div {
   box-sizing: border-box;
 }
+.bifm-container > div:has(> .bifm-embedded-video) {
+  position: relative;
+}
+.bifm-container > div:has(> .bifm-embedded-video)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  max-width: 30%;
+  max-height: 30%;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><circle cx="36" cy="36" r="33" fill="black" fill-opacity=".55" stroke="white" stroke-width="2"/><path d="M29 22 L51 36 L29 50 Z" fill="white"/></svg>') center / contain no-repeat;
+  pointer-events: none;
+}
 .bifm-container-vert {
   width: ${ADAPTER.conf.imgScale}%;
   height: fit-content;
