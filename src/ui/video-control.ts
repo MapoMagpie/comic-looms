@@ -1,9 +1,10 @@
 import { saveConf } from "../config";
 import { ADAPTER } from "../platform/adapt";
 import { evLog } from "../utils/ev-log";
+import { clamp } from "../utils/media-action";
 import onMouse from "../utils/progress-bar";
 import q from "../utils/query-element";
-import { clamp, MediaAction } from "./media-actions";
+import { AppEventIDInAnimation } from "./event";
 
 const PLAY_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M106.854 106.002a26.003 26.003 0 0 0-25.64 29.326c16 124 16 117.344 0 241.344a26.003 26.003 0 0 0 35.776 27.332l298-124a26.003 26.003 0 0 0 0-48.008l-298-124a26.003 26.003 0 0 0-10.136-1.994z"/></svg>`;
 const PAUSE_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M120.16 45A20.162 20.162 0 0 0 100 65.16v381.68A20.162 20.162 0 0 0 120.16 467h65.68A20.162 20.162 0 0 0 206 446.84V65.16A20.162 20.162 0 0 0 185.84 45h-65.68zm206 0A20.162 20.162 0 0 0 306 65.16v381.68A20.162 20.162 0 0 0 326.16 467h65.68A20.162 20.162 0 0 0 412 446.84V65.16A20.162 20.162 0 0 0 391.84 45h-65.68z"/></svg>`;
@@ -172,7 +173,7 @@ export class VideoControl {
     this.hidden();
   }
 
-  public action(action: MediaAction) {
+  public action(action: AppEventIDInAnimation) {
     const vid = this.getVideoElement();
     if (!vid) return;
     switch (action) {

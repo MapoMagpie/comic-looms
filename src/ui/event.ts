@@ -18,11 +18,9 @@ import { ADAPTER } from "../platform/adapt";
 import icons from "../utils/icons";
 import { FullViewGridManager } from "./full-view-grid-manager";
 
-import { MediaAction, mediaActions } from "./media-actions";
-
 export type Events = ReturnType<typeof initEvents>;
 
-export type AppEventIDInBigImgFrame = MediaAction | "step-image-prev"
+export type AppEventIDInBigImgFrame = "step-image-prev"
   | "step-image-next"
   | "exit-big-image-mode"
   | "step-to-first-image"
@@ -56,10 +54,19 @@ export type AppEventIDInFullViewGrid = "open-big-image-mode"
   | "start-download"
   | "go-prev-chapter"
   | "go-next-chapter";
+export type AppEventIDInAnimation = "video-play-pause"
+  | "video-seek-backward"
+  | "video-seek-forward"
+  | "video-frame-prev"
+  | "video-frame-next"
+  | "video-mute"
+  | "video-volume-up"
+  | "video-volume-down";
 export type AppEventIDInMain = "open-full-view-grid" | "start-download";
 export type AppEvents = {
   inBigImageMode: Record<AppEventIDInBigImgFrame, AppEventDesc>,
   inFullViewGrid: Record<AppEventIDInFullViewGrid, AppEventDesc>,
+  inAnimation: Record<AppEventIDInAnimation, AppEventDesc>,
   inMain: Record<AppEventIDInMain, AppEventDesc>,
 }
 type AppEvent = (event: KeyboardEvent | MouseEvent | undefined) => void;
@@ -354,9 +361,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         icons.playIcon,
         () => EBUS.emit("toggle-auto-play")
       ),
-      ...Object.fromEntries(Object.entries(mediaActions).map(([id, [key, icon]]) => [
-        id, new AppEventDesc([key], icon, () => BIFM.mediaAction(id as MediaAction)),
-      ])) as Record<MediaAction, AppEventDesc>,
       "round-read-mode": new AppEventDesc(
         ["alt+m"],
         icons.switchReadModeIcon,
@@ -395,6 +399,40 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         ["alt+w"],
         icons.nextChapterIcon,
         () => EBUS.emit("pf-step-chapters", "next"), true
+      ),
+    };
+    const inAnimation: Record<AppEventIDInAnimation, AppEventDesc> = {
+      "video-play-pause": new AppEventDesc(
+        ["k"], "▶/Ⅱ",
+        () => BIFM.mediaAction("video-play-pause"), true,
+      ),
+      "video-seek-backward": new AppEventDesc(
+        ["j"], "−5s",
+        () => BIFM.mediaAction("video-seek-backward"), true,
+      ),
+      "video-seek-forward": new AppEventDesc(
+        ["l"], "+5s",
+        () => BIFM.mediaAction("video-seek-forward"), true,
+      ),
+      "video-frame-prev": new AppEventDesc(
+        [","], "◀|",
+        () => BIFM.mediaAction("video-frame-prev"), true,
+      ),
+      "video-frame-next": new AppEventDesc(
+        ["."], "|▶",
+        () => BIFM.mediaAction("video-frame-next"), true,
+      ),
+      "video-mute": new AppEventDesc(
+        ["m"], "MUTE",
+        () => BIFM.mediaAction("video-mute"), true,
+      ),
+      "video-volume-up": new AppEventDesc(
+        ["i"], "VOL+",
+        () => BIFM.mediaAction("video-volume-up"), true,
+      ),
+      "video-volume-down": new AppEventDesc(
+        ["o"], "VOL-",
+        () => BIFM.mediaAction("video-volume-down"), true,
       ),
     };
     const inFullViewGrid: Record<AppEventIDInFullViewGrid, AppEventDesc> = {
@@ -581,7 +619,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
           EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true),
     };
-    return { inBigImageMode, inFullViewGrid, inMain }
+    return { inBigImageMode, inFullViewGrid, inAnimation, inMain }
   }
   const appEvents = initAppEvents();
 

@@ -1,5 +1,6 @@
-import { clamp, MediaAction } from "./media-actions";
 import { i18n } from "../utils/i18n";
+import { clamp } from "../utils/media-action";
+import { AppEventIDInAnimation } from "./event";
 
 // ImageDecoder is not yet included in every TypeScript DOM library.
 interface DecodedImage extends VideoFrame { duration: number | null; }
@@ -169,7 +170,7 @@ export class AnimationControl {
     }).catch(() => this.destroy());
   }
 
-  action(action: MediaAction) {
+  action(action: AppEventIDInAnimation) {
     if (!this.ready || !this.live()) return;
     const step = Math.max(1, Math.round(this.count / 10));
     switch (action) {

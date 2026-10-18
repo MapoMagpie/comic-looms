@@ -16,7 +16,8 @@ import { HTMLUgoiraElement } from "../utils/ugoira";
 import { SubData } from "../platform/platform";
 
 import { AnimationControl } from "./animation-control";
-import { MediaAction, MediaKind } from "./media-actions";
+import { AppEventIDInAnimation } from "./event";
+import { MediaKind } from "../utils/media-action";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement | HTMLUgoiraElement;
 type ViewportAxis = "x" | "y";
@@ -700,7 +701,7 @@ export class BigImageFrameManager {
     this.scrollInsidePagination(event, over, direction.o, $ori, customScrolling, smartScrolling);
   }
 
-  private handleHorizontalWheel(
+  private async handleHorizontalWheel(
     event: WheelEvent,
     smartScrolling: boolean,
     customScrolling: boolean | undefined,
@@ -713,7 +714,7 @@ export class BigImageFrameManager {
       .then(() => { this.syncCurrentFromViewport(); });
   }
 
-  private handleContinuousWheel(event: WheelEvent, customScrolling?: boolean): Promise<void> {
+  private async handleContinuousWheel(event: WheelEvent, customScrolling?: boolean): Promise<void> {
     if (!customScrolling) return Promise.resolve();
     return this.scrollerY
       .scroll(event.deltaY, ADAPTER.conf.scrollingSpeed)
@@ -900,7 +901,7 @@ export class BigImageFrameManager {
     return this.animationController?.ready ? "animation" : undefined;
   }
 
-  mediaAction(action: MediaAction) {
+  mediaAction(action: AppEventIDInAnimation) {
     if (this.mediaKind() === "video") this.vidController?.action(action);
     else if (this.mediaKind() === "animation") this.animationController?.action(action);
   }
