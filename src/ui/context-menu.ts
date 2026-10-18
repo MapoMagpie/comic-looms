@@ -1,20 +1,19 @@
 import EBUS from "../event-bus";
 import { i18n } from "../utils/i18n";
+import { MediaKind, supportsMediaAction } from "../utils/media-action";
 import q from "../utils/query-element";
-import { AppEventDesc, AppEventIDInBigImgFrame, AppEventIDInFullViewGrid, AppEvents } from "./event";
+import { AppEventDesc, AppEventIDInAnimation, AppEventIDInBigImgFrame, AppEventIDInFullViewGrid, AppEvents } from "./event";
 import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
-
-import { mediaActions, MediaAction, MediaKind, supportsMediaAction } from "./media-actions";
 
 type VisibleMode = "alway" | "onBig" | "onGrid" | "onMedia";
 
 class MenuItem {
-  id: AppEventIDInBigImgFrame | AppEventIDInFullViewGrid;
+  id: AppEventIDInBigImgFrame | AppEventIDInFullViewGrid | AppEventIDInAnimation;
   desc: AppEventDesc;
   visible: VisibleMode;
   closeAfter: boolean;
-  constructor(id: AppEventIDInBigImgFrame | AppEventIDInFullViewGrid, desc: AppEventDesc, visible: VisibleMode, closeAfter: boolean) {
+  constructor(id: AppEventIDInBigImgFrame | AppEventIDInFullViewGrid | AppEventIDInAnimation, desc: AppEventDesc, visible: VisibleMode, closeAfter: boolean) {
     this.id = id;
     this.visible = visible;
     this.desc = desc;
@@ -30,7 +29,8 @@ export class ContextMenu {
   getTarget: (x: number, y: number) => HTMLElement | undefined;
   isBigMode: () => boolean;
   pointerDownListener: (evt: MouseEvent) => void;
-  constructor(html: Elements, fvgm: FullViewGridManager, events: AppEvents, private mediaKind: () => MediaKind) {
+  mediaKind: () => MediaKind;
+  constructor(html: Elements, fvgm: FullViewGridManager, events: AppEvents, mediaKind: () => MediaKind) {
     this.root = html.root;
     // this.events = events;
     html.root.addEventListener("contextmenu", (event) => {
@@ -56,6 +56,7 @@ export class ContextMenu {
       }
     };
     this.isBigMode = () => !html.bigImageFrame.classList.contains("big-img-frame-collapse");
+    this.mediaKind = mediaKind;
     this.items = [];
     const inBigList: [AppEventIDInBigImgFrame, VisibleMode, boolean][] = [
       ["exit-big-image-mode", "onBig", true],
@@ -67,8 +68,18 @@ export class ContextMenu {
       ["step-image-prev", "onBig", false],
       ["step-image-next", "onBig", false],
     ];
-    for (const id of Object.keys(mediaActions) as MediaAction[]) inBigList.push([id, "onMedia", false]);
     inBigList.forEach(([id, hideOnBigMode, closeAfter]) => this.items.push(new MenuItem(id, events.inBigImageMode[id], hideOnBigMode, closeAfter)));
+    const inAnimation: [AppEventIDInAnimation, VisibleMode, boolean][] = [
+      ["video-play-pause", "onMedia", false],
+      ["video-seek-backward", "onMedia", false],
+      ["video-seek-forward", "onMedia", false],
+      ["video-frame-prev", "onMedia", false],
+      ["video-frame-next", "onMedia", false],
+      ["video-mute", "onMedia", false],
+      ["video-volume-up", "onMedia", false],
+      ["video-volume-down", "onMedia", false],
+    ];
+    inAnimation.forEach(([id, hideOnBigMode, closeAfter]) => this.items.push(new MenuItem(id, events.inAnimation[id], hideOnBigMode, closeAfter)));
     const inGridList: [AppEventIDInFullViewGrid, VisibleMode, boolean][] = [
       ["open-big-image-mode", "onGrid", true],
       ["open-in-new-tab", "onGrid", true],
