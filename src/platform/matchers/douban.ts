@@ -105,7 +105,7 @@ class DoubanMatcher extends BaseMatcher<Document> {
   }
 
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {
-    return Array.from(doc.querySelectorAll<HTMLImageElement>('.photo_wrap img')).map(
+    return Array.from(doc.querySelectorAll<HTMLImageElement>('.article img')).map(
       img => {
         // https://img3.doubanio.com/view/photo/m/public/p999999.webp
         // https://img3.doubanio.com/view/photo/l/public/p999999.webp
