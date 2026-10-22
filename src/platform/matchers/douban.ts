@@ -28,7 +28,7 @@ class DoubanMatcher extends BaseMatcher<Document> {
   }
 
   initGalleryMeta() {
-    const title = document.querySelector("#db-usr-profile > div.info > h1")?.textContent ?? document.title;
+    const title = document.querySelector("#content h1")?.textContent ?? document.title;
     this.meta = new GalleryMeta(window.location.href, title.trim());
   }
 
@@ -71,19 +71,33 @@ class DoubanMatcher extends BaseMatcher<Document> {
     this.initGalleryMeta();
     const thumbimg = document.querySelector<HTMLImageElement>("#db-usr-profile > div.pic > a > img")?.getAttribute("src") || undefined;
     let chapterCount = 0;
-    for await (const album_page of this.pages_of_albums(document, window.location.href)) {
-      let albums: DoubanAlbum [] = await this.albums_in_page(album_page)
-      for (const album of albums) {
-        const chapters: Chapter[] = [];
-        chapterCount += 1;
-        chapters.push(new Chapter(
-          chapterCount,
-          album["title"],
-          album["path"],
-          thumbimg,
-        ))
-        this.chapterCount = chapterCount;
-        yield chapters;
+
+    if (window.location.href.match(/subject|album|personage/)) {
+      chapterCount = 1;
+      const chapters: Chapter[] = [];
+      chapters.push(new Chapter(
+	chapterCount,
+	document.title,
+	window.location.href,
+	thumbimg,
+      ));
+      this.chapterCount = chapterCount;
+      yield chapters;
+    } else {
+      for await (const album_page of this.pages_of_albums(document, window.location.href)) {
+	let albums: DoubanAlbum [] = await this.albums_in_page(album_page)
+	for (const album of albums) {
+	  const chapters: Chapter[] = [];
+	  chapterCount += 1;
+	  chapters.push(new Chapter(
+	    chapterCount,
+	    album["title"],
+	    album["path"],
+	    thumbimg,
+	  ))
+	  this.chapterCount = chapterCount;
+	  yield chapters;
+	}
       }
     }
   }
@@ -133,10 +147,16 @@ class DoubanMatcher extends BaseMatcher<Document> {
 }
 
 ADAPTER.addSetup({
-  name: "豆瓣相册",
+  name: "豆瓣",
   workURLs: [
-    /douban.com\/people\/[^\/]+\/photos/
+    /douban.com\/people\/[^\/]+\/photos/,
+    /douban.com\/photos\/album\//,
+    /douban.com\/personage\/[^\/]+\/photos.*/,
+    /movie.douban.com\/subject\/[^\/]+\/photos.*/,
   ],
-  match: ["https://www.douban.com/*"],
+  match: [
+    "https://www.douban.com/*",
+    "https://movie.douban.com/*",
+  ],
   constructor: () => new DoubanMatcher(),
 });
