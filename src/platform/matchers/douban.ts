@@ -39,7 +39,7 @@ class DoubanMatcher extends BaseMatcher<Document> {
     page_number += 1
     yield {
       page_number: page_number,
-      owner_name: doc.querySelector('#db-usr-profile > div.info > h1').innerText.trim(),
+      owner_name: doc.querySelector('#content h1').innerText.trim(),
       path: path,
     }
     if (next_page) {
