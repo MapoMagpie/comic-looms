@@ -75,5 +75,6 @@ export const META = [
   "// @grant              GM.xmlHttpRequest",
   "// @grant              GM_getValue",
   "// @grant              GM_setValue",
+  "// @grant              unsafeWindow",
   "// ==/UserScript==",
 ].join("\n");

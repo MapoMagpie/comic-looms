@@ -7,10 +7,14 @@ import { transactionId, uuid } from "../../utils/random";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
 import { streamHomeLists, observeListRequests } from "./twitter-lists";
-import { applyTweetState, readTweetState, trackTweetActions } from "./twitter-action-state";
+import { applyTweetState, readTweetState, trackTweetActions, startTweetStateSync, publishTweetState, newestTweetState } from "./twitter-action-state";
 import { performTweetAction } from "./twitter-actions";
 
 observeListRequests();
+if (/^(x|twitter)\.com$/.test(location.hostname)) {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTweetStateSync, { once: true });
+  else startTweetStateSync();
+}
 
 type Size = {
   h: number,
@@ -429,11 +433,19 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     let actionBookmark: NodeAction | undefined;
     if (tweetID) {
       actionLike = new NodeAction("♥", "like this tweet", async () => {
-        await performTweetAction("FavoriteTweet", tweetID, () => createHeader(this.uuid));
-      });
+        const target = !(newestTweetState(tweetID).liked ?? actionLike!.done);
+        await performTweetAction(target ? "FavoriteTweet" : "UnfavoriteTweet", tweetID, () => createHeader(this.uuid));
+        publishTweetState(tweetID, { liked: target });
+        return target;
+      }, true);
+      actionLike.id = "x-toggle-like";
       actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
-        await performTweetAction("CreateBookmark", tweetID, () => createHeader(this.uuid));
-      });
+        const target = !(newestTweetState(tweetID).bookmarked ?? actionBookmark!.done);
+        await performTweetAction(target ? "CreateBookmark" : "DeleteBookmark", tweetID, () => createHeader(this.uuid));
+        publishTweetState(tweetID, { bookmarked: target });
+        return target;
+      }, true);
+      actionBookmark.id = "x-toggle-bookmark";
       const actions = { like: actionLike, bookmark: actionBookmark };
       applyTweetState(actions, readTweetState(item, tweetID));
       trackTweetActions(tweetID, actions);

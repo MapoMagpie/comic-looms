@@ -28,34 +28,8 @@ type Rect = {
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
 type OnResize = () => void;
 
-export class NodeAction {
-  icon: string;
-  description: string;
-  func: (node: ImageNode) => Promise<void>;
-  reueable: boolean = false;
-  private completed = false;
-  private buttons = new Set<WeakRef<HTMLButtonElement>>();
-  get done() { return this.completed; }
-  set done(value: boolean) {
-    this.completed = value;
-    for (const ref of this.buttons) {
-      const button = ref.deref();
-      if (!button?.isConnected) this.buttons.delete(ref);
-      else button.classList.toggle("img-node-action-btn-done", value);
-    }
-  }
-  bind(button: HTMLButtonElement) {
-    this.buttons.add(new WeakRef(button));
-    button.classList.toggle("img-node-action-btn-done", this.done);
-  }
-  processing: boolean = false;
-  constructor(icon: string, description: string, func: (node: ImageNode) => Promise<void>, reueable?: boolean) {
-    this.icon = icon;
-    this.description = description;
-    this.func = func;
-    this.reueable = reueable ?? false;
-  }
-}
+import { NodeAction } from "./utils/node-action";
+export { NodeAction } from "./utils/node-action";
 
 export default class ImageNode {
   root?: HTMLElement;
@@ -167,28 +141,16 @@ export default class ImageNode {
       for (const action of this.actions) {
         const actionElem = document.createElement("button");
         actionElem.classList.add("img-node-action-btn");
-        action.bind(actionElem);
         actionElem.textContent = action.icon;
+        action.bind(actionElem);
         actionElem.addEventListener("click", (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
-          if (action.processing || (action.done && !action.reueable)) return;
-          const target = ev.target as HTMLButtonElement;
-          target.disabled = true;
-          target.classList.add("img-node-action-btn-processing");
-          action.processing = true;
-          action.func(this).then(() => {
-            target.classList.remove("img-node-action-btn-processing");
-            target.classList.add("img-node-action-btn-done");
-            target.disabled = false;
-            action.done = true;
-          }).catch((reason) => {
-            target.classList.remove("img-node-action-btn-processing");
-            target.classList.add("img-node-action-btn-error");
-            target.disabled = false;
+          actionElem.classList.remove("img-node-action-btn-error");
+          void action.run(this).catch(reason => {
+            actionElem.classList.add("img-node-action-btn-error");
             EBUS.emit("notify-message", "error", `execute action [${action.icon}] failed, reason: ${reason}`);
-            console.error(reason);
-          }).finally(() => action.processing = false);
+          });
         }, { passive: false, capture: true });
         actionContainer.appendChild(actionElem);
       }

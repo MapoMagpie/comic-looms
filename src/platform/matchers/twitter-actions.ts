@@ -1,7 +1,10 @@
-import { GM_XHR } from "../../utils/query";
-import { currentTwitterBundle, invalidateTwitterBundle } from "./twitter-bundle";
+import { nativeClientMutation } from "./twitter-native-client";
+import { currentTwitterBundle, invalidateTwitterBundle, refreshTwitterBundle } from "./twitter-bundle";
+import { newestTweetState } from "./twitter-action-state";
 
-export type TweetOperation = "FavoriteTweet" | "CreateBookmark";
+export type TweetOperation = "FavoriteTweet" | "UnfavoriteTweet" | "CreateBookmark" | "DeleteBookmark";
+
+const recoveredQueries = new Map<TweetOperation, string>();
 
 function tweetArticle(id: string): Element | undefined {
   return Array.from(document.querySelectorAll('article[data-testid="tweet"]')).find(article => {
@@ -11,9 +14,18 @@ function tweetArticle(id: string): Element | undefined {
 }
 
 export async function performNativeTweetAction(operation: TweetOperation, id: string): Promise<boolean> {
-  const [off, on] = operation === "FavoriteTweet" ? ["like", "unlike"] : ["bookmark", "removeBookmark"];
+  const like = operation === "FavoriteTweet" || operation === "UnfavoriteTweet";
+  const active = operation === "FavoriteTweet" || operation === "CreateBookmark";
+  const pair = like ? ["like", "unlike"] : ["bookmark", "removeBookmark"];
+  const [off, on] = active ? pair : pair.slice().reverse();
   const article = tweetArticle(id);
   if (!article) return false;
+  const known = newestTweetState(id);
+  const expected = like ? known.liked : known.bookmarked;
+  const native = article.querySelector(`[data-testid="${pair[1]}"]`) ? true
+    : article.querySelector(`[data-testid="${pair[0]}"]`) ? false : undefined;
+  // A cross-tab update can be newer than React's local view. Do not trust that view.
+  if (expected !== undefined && native !== expected) return false;
   if (article.querySelector(`[data-testid="${on}"]`)) return true;
   const button = article.querySelector<HTMLButtonElement>(`button[data-testid="${off}"]`);
   if (!button) return false;
@@ -29,23 +41,31 @@ export async function performNativeTweetAction(operation: TweetOperation, id: st
 }
 
 export function actionQueryId(bundle: string, operation: TweetOperation): string | undefined {
-  const definitions = bundle.matchAll(/queryId\s*:\s*["']([\w-]+)["']\s*,\s*operationName\s*:\s*["'](FavoriteTweet|CreateBookmark)["']/g);
+  const definitions = bundle.matchAll(/queryId\s*:\s*["']([\w-]+)["']\s*,\s*operationName\s*:\s*["'](FavoriteTweet|UnfavoriteTweet|CreateBookmark|DeleteBookmark)["']/g);
   for (const definition of definitions) if (definition[2] === operation) return definition[1];
   return undefined;
 }
 
-function request(url: string, headers: Record<string, string> = {}, data?: string): Promise<string> {
-  return new Promise((resolve, reject) => GM_XHR({
-    method: data ? "POST" : "GET", url, headers, data, responseType: "text", timeout: 10000,
-    onload: response => response.status >= 200 && response.status < 300
-      ? resolve(response.responseText) : reject(new Error(`X action HTTP ${response.status}`)),
-    onerror: () => reject(new Error("X action request failed")),
-    ontimeout: () => reject(new Error("X action request timed out; check X before retrying")),
-    onabort: () => reject(new Error("X action request aborted")),
-  }));
+export function observedActionEndpoint(operation: TweetOperation): { queryId: string; url: string } | undefined {
+  // Prefer an endpoint that this page actually used successfully. Never copy tokens
+  // or query parameters, nor trust a request to a different host.
+  const entries = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
+  for (const entry of entries.slice().reverse()) {
+    if (entry.responseStatus < 200 || entry.responseStatus >= 300 || !entry.responseStatus) continue;
+    try {
+      const url = new URL(entry.name);
+      const match = url.pathname.match(/^\/(?:i\/api\/)?graphql\/([\w-]+)\/(FavoriteTweet|UnfavoriteTweet|CreateBookmark|DeleteBookmark)$/);
+      if (url.origin === location.origin && match?.[2] === operation) return { queryId: match[1], url: url.origin + url.pathname };
+    } catch { /* Ignore non-URL resource entries. */ }
+  }
+  return undefined;
 }
 
-async function currentQuery(operation: TweetOperation): Promise<{ queryId: string; src: string }> {
+async function currentQuery(operation: TweetOperation): Promise<{ queryId: string; src?: string; url?: string }> {
+  const recovered = recoveredQueries.get(operation);
+  if (recovered) return { queryId: recovered };
+  const observed = observedActionEndpoint(operation);
+  if (observed) return observed;
   const bundle = await currentTwitterBundle();
   if (!bundle) throw new Error("X action definition unavailable; refresh X and retry");
   const queryId = actionQueryId(bundle.text, operation);
@@ -53,25 +73,43 @@ async function currentQuery(operation: TweetOperation): Promise<{ queryId: strin
   return { queryId, src: bundle.src };
 }
 
-export function checkActionResult(text: string) {
+export function checkActionResult(text: string, operation?: TweetOperation) {
   const result = JSON.parse(text);
-  if (result.errors?.length || !result.data || typeof result.data !== "object") {
+  if (!result || typeof result !== "object") throw new Error("X action was not confirmed");
+  // X returns code 139 when an add-like request races with an already liked tweet.
+  if (operation === "FavoriteTweet" && result.errors?.length && result.errors.every((error: { code?: number }) => error.code === 139)) return;
+  if (result.errors?.length || !result.data || typeof result.data !== "object" || !Object.keys(result.data).length) {
+    throw new Error("X action was not confirmed");
+  }
+  const bookmarkField = operation === "CreateBookmark" ? "tweet_bookmark_put"
+    : operation === "DeleteBookmark" ? "tweet_bookmark_delete" : undefined;
+  if (bookmarkField && result.data[bookmarkField] !== "Done") {
     throw new Error("X action was not confirmed");
   }
 }
 
-export async function performTweetAction(operation: TweetOperation, tweetID: string, headers: () => Headers) {
+export async function performTweetAction(operation: TweetOperation, tweetID: string, _headers: () => Headers) {
   if (await performNativeTweetAction(operation, tweetID)) return;
-  const { queryId, src } = await currentQuery(operation);
-  const values: Record<string, string> = {};
-  headers().forEach((value, key) => { values[key] = value; });
+  const descriptor = await currentQuery(operation);
   try {
-    const text = await request(`${location.origin}/i/api/graphql/${queryId}/${operation}`, values,
-      JSON.stringify({ variables: { tweet_id: tweetID }, queryId }));
-    checkActionResult(text);
+    await sendAction(descriptor.queryId, operation, tweetID);
   } catch (error) {
-    // Never automatically retry a mutation: the server may already have applied it.
-    if (error instanceof Error && error.message === "X action HTTP 404") invalidateTwitterBundle(src);
-    throw error;
+    if (!(error instanceof Error) || error.message !== "X action HTTP 404") throw error;
+    recoveredQueries.delete(operation);
+    if (descriptor.src) invalidateTwitterBundle(descriptor.src);
+    const fresh = await refreshTwitterBundle();
+    const queryId = fresh && actionQueryId(fresh.text, operation);
+    // A definite endpoint 404 can retry once, only with a different current endpoint.
+    // Timeouts, auth failures and ambiguous responses must never trigger another mutation.
+    if (!queryId || queryId === descriptor.queryId) {
+      throw new Error(`X action endpoint is unavailable (404). operation=${operation}; requestedQueryId=${descriptor.queryId}; refreshedQueryId=${queryId ?? "missing"}; source=${descriptor.src ?? (descriptor.url ? "observed-request" : "recovered-cache")}; refreshedSource=${fresh?.src ?? "missing"}.`);
+    }
+    await sendAction(queryId, operation, tweetID);
+    recoveredQueries.set(operation, queryId);
   }
+}
+
+async function sendAction(queryId: string, operation: TweetOperation, tweetID: string) {
+  const text = await nativeClientMutation(queryId, operation, tweetID);
+  checkActionResult(text, operation);
 }

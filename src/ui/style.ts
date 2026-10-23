@@ -197,6 +197,20 @@ export function styleCSS() {
   border: 1px solid #6eff84;
   color: #6eff84;
 }
+.img-node-action-btn.img-node-action-x {
+  color: #fff;
+  border-color: #fff;
+  background-color: #161616e6;
+}
+.img-node-action-btn.img-node-action-x.img-node-action-btn-done {
+  color: #ff334f;
+  border-color: #ff334f;
+  background-color: #161616e6;
+}
+.img-node-action-x svg {
+  display: block;
+  pointer-events: none;
+}
 .img-node-action-btn-error {
   border: 1px solid red;
   color: red;

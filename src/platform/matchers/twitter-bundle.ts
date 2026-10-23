@@ -1,6 +1,23 @@
 import { GM_XHR } from "../../utils/query";
 
 const bundles = new Map<string, Promise<string>>();
+let refreshedSrc: string | undefined;
+
+export async function refreshTwitterBundle() {
+  const html = await new Promise<string>((resolve, reject) => GM_XHR({
+    method: "GET", url: `${location.origin}/home`, responseType: "text", timeout: 10000,
+    headers: { "Cache-Control": "no-cache" },
+    onload: response => response.status === 200 ? resolve(response.responseText) : reject(new Error("Cannot refresh X action definitions")),
+    onerror: () => reject(new Error("Cannot refresh X action definitions")),
+    ontimeout: () => reject(new Error("X definition refresh timed out")),
+    onabort: () => reject(new Error("X definition refresh aborted")),
+  }));
+  // Read a URL only; never execute downloaded page code.
+  refreshedSrc = html.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/"'\s]*\/main\.[\w]+\.js/)?.[0];
+  if (!refreshedSrc) throw new Error("Current X page has no main bundle; refresh X and sign in if needed");
+  invalidateTwitterBundle(refreshedSrc);
+  return currentTwitterBundle();
+}
 
 export function invalidateTwitterBundle(src: string) {
   bundles.delete(src);
@@ -9,7 +26,7 @@ export function invalidateTwitterBundle(src: string) {
 export async function currentTwitterBundle(): Promise<{ src: string; text: string } | undefined> {
   const urls = [...Array.from(document.scripts).map(script => script.src),
     ...performance.getEntriesByType("resource").map(entry => entry.name)];
-  const src = urls.find(url => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(url));
+  const src = refreshedSrc ?? urls.find(url => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(url));
   if (!src) return undefined;
   let pending = bundles.get(src);
   if (!pending) {
