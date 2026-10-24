@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
 import ts from 'typescript';
+import { observeNativeActions } from '../src/platform/matchers/twitter-action-response.ts';
 const source=ts.transpileModule(fs.readFileSync(new URL('../src/platform/matchers/twitter-action-state.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 
 test('separate tab runtimes restore missed updates and synchronize every action group',()=>{
   const disk=new Map(), channels=[], windows=[];
   function tab(account) {
     const listeners={};windows.push(listeners);
-    const sandbox={exports:{},Date,WeakRef,setTimeout,
+    const sandbox={exports:{},require:()=>({observeNativeActions}),Date,WeakRef,setTimeout,
       document:{cookie:'twid=u%3D'+account,body:{},querySelectorAll:()=>[]},
       window:{addEventListener:(name,fn)=>listeners[name]=fn},
       MutationObserver:class{observe(){}},
