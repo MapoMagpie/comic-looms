@@ -26,3 +26,13 @@ test('missing native client fails before sending any mutation',async()=>{
   globalThis.unsafeWindow={document:{getElementById:()=>({})}};
   await assert.rejects(nativeClientMutation('dynamic','DeleteBookmark','42'),/no API request was sent/);
 });
+
+test('native client duplicate bookmark rejection confirms only its matching GraphQL path',async()=>{
+  let path='tweet_bookmark_put';
+  const client={graphQL:async()=>{throw {errors:[{code:139,path:[path]}]};}};
+  const store={getState:()=>({}),dispatch:fn=>fn(null,null,{api:{withEndpoint:factory=>factory({apiClient:client})}})};
+  globalThis.unsafeWindow={document:{getElementById:()=>({__reactContainer$test:{memoizedProps:{store}}})}};
+  assert.deepEqual(JSON.parse(await nativeClientMutation('dynamic','CreateBookmark','42')),{data:{tweet_bookmark_put:'Done'}});
+  path='favorite_tweet';
+  await assert.rejects(nativeClientMutation('dynamic','CreateBookmark','42'));
+});

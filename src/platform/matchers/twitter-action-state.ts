@@ -1,3 +1,5 @@
+import { observeNativeActions } from "./twitter-action-response";
+
 type Action = { done: boolean };
 type Actions = { like: Action; bookmark: Action };
 type State = { liked?: boolean; bookmarked?: boolean };
@@ -36,6 +38,7 @@ let observer: MutationObserver | undefined;
 let channel: BroadcastChannel | undefined;
 let scheduled = false;
 let listening = false;
+let observingResponses = false;
 const STORAGE_PREFIX = "comic-looms-x-state-v2:";
 const MAX_AGE = 60 * 60 * 1000;
 const versions = new Map<string, Partial<Record<keyof State, number>>>();
@@ -136,7 +139,7 @@ function syncArticle(article: Element) {
   restore(id);
   const previous = snapshots.get(article);
   snapshots.set(article, { id, account, state });
-  if (previous?.id === id && previous.account === account) {
+  if (previous?.id === id && previous.account === account && !observingResponses) {
     publishTweetState(id, {
       liked: previous.state.liked !== state.liked ? state.liked : undefined,
       bookmarked: previous.state.bookmarked !== state.bookmarked ? state.bookmarked : undefined,
@@ -160,6 +163,7 @@ function syncVisibleTweets() {
 
 export function startTweetStateSync() {
   ensureAccount();
+  if (!observingResponses) observingResponses = observeNativeActions(currentAccount, publishTweetState);
   if (!channel && typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
     channel = new BroadcastChannel("comic-looms-x-actions-v2");
     channel.onmessage = event => receive(event.data);

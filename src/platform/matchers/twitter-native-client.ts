@@ -1,4 +1,5 @@
 import type { TweetOperation } from "./twitter-actions";
+import { confirmedActionState } from "./twitter-action-response";
 
 type NativeClient = {
   graphQL: (definition: object, variables: object) => Promise<unknown>;
@@ -49,6 +50,9 @@ export async function nativeClientMutation(queryId: string, operation: TweetOper
     queryId, operationName: operation, operationType: "mutation",
     metadata: { featureSwitches: [], fieldToggles: [] },
   }, { tweet_id: tweetID }).catch((error: unknown) => {
+    if (confirmedActionState(operation, error)) {
+      return operation === "CreateBookmark" ? { tweet_bookmark_put: "Done" } : { favorite_tweet: "Done" };
+    }
     if (error && typeof error === "object" && "status" in error && error.status === 404) {
       throw new Error("X action HTTP 404");
     }

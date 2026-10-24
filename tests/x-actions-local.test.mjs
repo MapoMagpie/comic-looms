@@ -38,7 +38,7 @@ test('native add/remove controls support all four operations without double togg
 });
 
 test('already-liked is confirmed, but auth errors and ambiguous data remain failures', () => {
-  checkActionResult('{"errors":[{"code":139,"message":"You have already favorited this status."}]}', 'FavoriteTweet');
+  checkActionResult('{"errors":[{"code":139,"path":["favorite_tweet"],"message":"You have already favorited this status."}]}', 'FavoriteTweet');
   assert.throws(() => checkActionResult('{"errors":[{"code":139}]}', 'UnfavoriteTweet'));
   assert.throws(() => checkActionResult('{"errors":[{"code":32}]}', 'FavoriteTweet'));
   assert.throws(() => checkActionResult('{"data":{}}', 'CreateBookmark'));

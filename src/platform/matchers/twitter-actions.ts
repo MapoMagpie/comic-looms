@@ -1,6 +1,7 @@
 import { nativeClientMutation } from "./twitter-native-client";
 import { currentTwitterBundle, invalidateTwitterBundle, refreshTwitterBundle } from "./twitter-bundle";
 import { newestTweetState } from "./twitter-action-state";
+import { confirmedActionState } from "./twitter-action-response";
 
 export type TweetOperation = "FavoriteTweet" | "UnfavoriteTweet" | "CreateBookmark" | "DeleteBookmark";
 
@@ -76,8 +77,7 @@ async function currentQuery(operation: TweetOperation): Promise<{ queryId: strin
 export function checkActionResult(text: string, operation?: TweetOperation) {
   const result = JSON.parse(text);
   if (!result || typeof result !== "object") throw new Error("X action was not confirmed");
-  // X returns code 139 when an add-like request races with an already liked tweet.
-  if (operation === "FavoriteTweet" && result.errors?.length && result.errors.every((error: { code?: number }) => error.code === 139)) return;
+  if (operation && confirmedActionState(operation, result)) return;
   if (result.errors?.length || !result.data || typeof result.data !== "object" || !Object.keys(result.data).length) {
     throw new Error("X action was not confirmed");
   }
