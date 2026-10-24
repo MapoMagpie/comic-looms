@@ -1,3 +1,4 @@
+import { isXShortcutEnabled } from "../utils/x-shortcuts";
 import EBUS from "../event-bus";
 import { i18n } from "../utils/i18n";
 import { MediaKind, supportsMediaAction } from "../utils/media-action";
@@ -80,6 +81,9 @@ export class ContextMenu {
       ["video-volume-down", "onMedia", false],
     ];
     inAnimation.forEach(([id, hideOnBigMode, closeAfter]) => this.items.push(new MenuItem(id, events.inAnimation[id], hideOnBigMode, closeAfter)));
+    if (isXShortcutEnabled(location.hostname, false, false)) {
+      this.items.push(new MenuItem("x-toggle-like", events.inFullViewGrid["x-toggle-like"], "onBig", true));
+    }
     const inGridList: [AppEventIDInFullViewGrid, VisibleMode, boolean][] = [
       ["open-big-image-mode", "onGrid", true],
       ["open-in-new-tab", "onGrid", true],

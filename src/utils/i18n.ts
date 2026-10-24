@@ -1182,6 +1182,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
 type I18nKeys = keyof (typeof i18nData);
 
 const kbInFullViewGridData: Record<AppEventIDInFullViewGrid | AppEventIDInBigImgFrame | AppEventIDInAnimation | AppEventIDInMain, Langs> = {
+  'x-toggle-like': ['X only: Toggle like', '仅 X：喜欢／取消喜欢', 'X: 좋아요 전환', 'Solo X: alternar Me gusta'],
+  'x-toggle-bookmark': ['X only: Toggle bookmark', '仅 X：书签／取消书签', 'X: 북마크 전환', 'Solo X: alternar marcador'],
   'open-full-view-grid': [
     'Enter Read Mode',
     '进入阅读模式',

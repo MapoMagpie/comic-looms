@@ -14,11 +14,21 @@ globalThis.document = {cookie:'twid=u%3D123',scripts:[],querySelectorAll:()=>[]}
 globalThis.location = {origin:'https://x.com',hostname:'x.com'};
 globalThis.PerformanceObserver = undefined;
 
+const fakeClient = { graphQL: (definition,variables) => new Promise((resolve,reject)=>{
+   Promise.resolve().then(()=>gmRequest({url:'https://x.com/i/api/graphql/'+definition.queryId+'/'+definition.operationName,method:'POST',data:JSON.stringify({variables,queryId:definition.queryId}),
+     onload:r=>r.status>=200&&r.status<300?resolve(JSON.parse(r.responseText).data):reject(Object.assign(new Error('HTTP '+r.status),{status:r.status})),
+     onerror:reject,ontimeout:()=>reject(new Error('timed out')),onabort:()=>reject(new Error('aborted'))
+   })).catch(reject);
+ })};
+const fakeStore = {getState:()=>({}),dispatch:fn=>fn(null,null,{api:{withEndpoint:factory=>factory({apiClient:fakeClient})}})};
+globalThis.unsafeWindow = {document:{getElementById:()=>({__reactContainer$test:{memoizedProps:{store:fakeStore}}})}};
+
 const { collectLists, listCursor, parseListRequest, pinnedRequestFromBundle, fetchHomeLists, streamHomeLists } = await import('../src/platform/matchers/twitter-lists.ts');
 const { VideoControl } = await import('../src/ui/video-control.ts');
 const { AnimationControl } = await import('../src/ui/animation-control.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
-const { mediaActions, supportsMediaAction } = await import('../src/ui/media-actions.ts');
+const { supportsMediaAction } = await import('../src/utils/media-action.ts');
+const mediaActions = Object.fromEntries(['play-pause','seek-backward','seek-forward','frame-prev','frame-next','mute','volume-up','volume-down'].map((id,i)=>['video-'+id, [['k','j','l',',','.','m','i','o'][i]]]));
 const { actionQueryId, performTweetAction, checkActionResult } = await import('../src/platform/matchers/twitter-actions.ts');
 const { currentTwitterBundle } = await import('../src/platform/matchers/twitter-bundle.ts');
 
@@ -94,14 +104,14 @@ test('tweet actions resolve current bundle IDs, send matching POST bodies and ne
     assert.equal(calls[1].url, 'https://x.com/i/api/graphql/new-bookmark/CreateBookmark');
     assert.deepEqual(JSON.parse(calls[1].data), { variables: { tweet_id: '12345' }, queryId: 'new-bookmark' });
     assert.equal(calls[1].method, 'POST');
-    status = 404;
-    await assert.rejects(performTweetAction('FavoriteTweet', '12345', () => new Headers()), /HTTP 404/);
+    status = 403;
+    await assert.rejects(performTweetAction('FavoriteTweet', '12345', () => new Headers()), /HTTP 403/);
     assert.equal(calls.length, 3, 'one shared bundle and exactly one request per action');
     assert.throws(() => checkActionResult('{"data":{},"errors":[{"message":"Denied"}]}'), /not confirmed/);
     assert.throws(() => checkActionResult('{}'), /not confirmed/);
     status = 200;
     await performTweetAction('CreateBookmark', '12345', () => new Headers());
-    assert.equal(calls[3].method, 'GET', 'a later user retry refreshes the descriptor after failure');
+    assert.equal(calls[3].method, 'POST', 'permission failures do not evict the public bundle');
   } finally { gmRequest = previous.gmRequest; document.scripts = previous.scripts; }
 });
 

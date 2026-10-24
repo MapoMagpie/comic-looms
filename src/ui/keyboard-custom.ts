@@ -1,3 +1,4 @@
+import { isXShortcutEnabled } from "../utils/x-shortcuts";
 import { saveConf } from "../config";
 import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
@@ -61,7 +62,7 @@ export default function createKeyboardCustomPanel(keyboardEvents: AppEvents, roo
       `).join("")}
     </div>
     <div class="ehvp-custom-panel-content">
-      ${Object.entries(keyboardEvents.inFullViewGrid).filter(entry => !entry[1].noKeyboard).map(([id]) => `
+      ${Object.entries(keyboardEvents.inFullViewGrid).filter(([id, desc]) => !desc.noKeyboard && (!id.startsWith("x-toggle-") || isXShortcutEnabled(location.hostname, false, false))).map(([id]) => `
         <div class="ehvp-custom-panel-item">
          <div class="ehvp-custom-panel-item-title">
            <span>${i18n.keyboard[id as AppEventIDInFullViewGrid].get()}</span>
