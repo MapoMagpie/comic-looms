@@ -128,13 +128,17 @@ export default class ImageNode {
         this.onclick!(event);
       }, { passive: false, capture: false });
     }
+    let hovered = false;
+    const hideActions = () => {
+      if (!hovered && !this.root!.querySelector(".img-node-action-btn-processing")) {
+        this.root!.querySelector(".img-node-actions")?.remove();
+      }
+    };
+    this.root.addEventListener("mouseleave", () => { hovered = false; hideActions(); });
+    this.root.addEventListener("action-visual-settled", hideActions);
     this.root.addEventListener("mouseenter", () => {
+      hovered = true;
       if (this.actions.length === 0) return;
-      this.root!.addEventListener("mouseleave", () => {
-        if (!this.root!.querySelector(".img-node-actions > .img-node-action-btn-processing")) {
-          this.root!.querySelector(".img-node-actions")?.remove();
-        }
-      });
       if (this.root!.querySelector(".img-node-actions")) return;
       const actionContainer = document.createElement("div");
       actionContainer.classList.add("img-node-actions");

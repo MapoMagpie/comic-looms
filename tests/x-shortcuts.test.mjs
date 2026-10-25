@@ -4,7 +4,9 @@ import { parseHTML } from 'linkedom';
 const { window, document } = parseHTML('<html><body></body></html>');
 globalThis.window = window; globalThis.document = document;
 globalThis.HTMLElement = window.HTMLElement;
-globalThis.MouseEvent = class extends Event {};
+globalThis.MouseEvent = class extends Event {
+  constructor(type,options={}) { super(type,options);this.relatedTarget=options.relatedTarget; }
+};
 window.screen = { width: 1920, height: 1080, availHeight: 1080 };
 globalThis.GM = {}; globalThis.GM_getValue = () => undefined; globalThis.GM_setValue = () => {};
 globalThis.location = { hostname: 'x.com' };
@@ -14,6 +16,21 @@ globalThis.KeyboardEvent = class extends Event {
 };
 const { initEvents } = await import('../src/ui/event.ts');
 const { ADAPTER } = await import('../src/platform/adapt.ts');
+
+test('opening the context-menu target in a new tab restores grid focus before navigation',()=>{
+  const root=document.createElement('div'),grid=document.createElement('div');
+  const bigImageFrame=document.createElement('div');root.append(grid,bigImageFrame);
+  const node=document.createElement('div');node.innerHTML='<a href="https://x.com/example/status/42"></a>';
+  let focused=false,opened=0;
+  grid.focus=options=>{assert.equal(options.preventScroll,true);focused=true;};
+  const oldClick=window.HTMLAnchorElement.prototype.click;
+  window.HTMLAnchorElement.prototype.click=function(){assert.equal(focused,true);assert.equal(this.target,'_blank');opened++;};
+  try {
+    const events=initEvents({root,fullViewGrid:grid,bigImageFrame},{visible:false},{},[],{},{});
+    events.appEvents.inFullViewGrid['open-in-new-tab'].cb(new MouseEvent('contextmenu',{relatedTarget:node}));
+    assert.equal(opened,1);
+  } finally {window.HTMLAnchorElement.prototype.click=oldClick;}
+});
 
 test('configured grid shortcuts run only on X, ignore editing/repeats and use the shared action', async () => {
   const root = document.createElement('div');

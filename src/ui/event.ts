@@ -471,6 +471,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
               const an = document.createElement("a");
               an.href = href;
               an.target = "_blank";
+              // The menu is outside the grid's keyboard event path. Restore
+              // focus before navigation so returning to this tab keeps shortcuts.
+              HTML.fullViewGrid.focus({ preventScroll: true });
               an.click();
               an.remove();
             }

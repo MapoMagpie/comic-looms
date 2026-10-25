@@ -126,6 +126,7 @@ export class ContextMenu {
 
   close() {
     this.menu?.remove();
+    this.menu = undefined;
     document.removeEventListener('pointerdown', this.pointerDownListener);
   }
 
@@ -163,12 +164,12 @@ export class ContextMenu {
       });
       elem.addEventListener("click", () => {
         item.desc.cb(mev);
-        if (item.closeAfter) div.remove();
+        if (item.closeAfter) this.close();
       });
       return elem;
     });
     q(".ehvp-context-menu-grid", div).append(...items);
-    div.addEventListener("mouseleave", () => div.remove());
+    div.addEventListener("mouseleave", () => this.close());
     return div;
   }
 

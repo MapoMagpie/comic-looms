@@ -48,8 +48,26 @@ export class NodeAction {
       const state = await this.func(node);
       this.done = typeof state === "boolean" ? state : true;
     } finally {
+      // Finish the current rotation instead of cutting it off mid-cycle. Keep
+      // processing true until then, including for keyboard-triggered actions.
+      await Promise.all(Array.from(this.buttons, ref => {
+        const button = ref.deref();
+        if (!button?.isConnected) return Promise.resolve();
+        return Promise.all((button.getAnimations?.() ?? []).filter(animation =>
+          (animation as CSSAnimation).animationName === "btn-rotate"
+        ).map(async animation => {
+          const duration = Number(animation.effect?.getComputedTiming().duration);
+          if (!duration || !Number.isFinite(duration)) return;
+          const elapsed = Number(animation.currentTime ?? 0);
+          animation.effect?.updateTiming({ iterations: Math.max(1, Math.ceil(elapsed / duration)) });
+          await animation.finished.catch(() => {});
+        }));
+      }));
       this.processing = false;
       this.render();
+      for (const ref of this.buttons) {
+        ref.deref()?.dispatchEvent?.(new Event("action-visual-settled", { bubbles: true }));
+      }
     }
   }
 }
