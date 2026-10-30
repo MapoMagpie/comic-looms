@@ -110,6 +110,7 @@ function setup(): DestoryFunc {
 
   return () => {
     console.log("destory eh-view-enhance");
+    MATCHER.dispose?.();
     ADAPTER.reset();
     entry(false);
     PF.abort();

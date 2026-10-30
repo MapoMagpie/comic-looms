@@ -49,6 +49,7 @@ Regarding new site adaptation, due to limited time and energy, new adaptation re
 Mainly supported sites:
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
+- RedGIFs: Author profile videos (static previews, MP4 playback and downloads)
 - [Twitter|X](https://x.com/NASA/media): User's Media, Lists, For you, Following
 - [pixiv.net](https://pixiv.net): Artists' illust and manga, Your Homepage
 - [nhentai.net](https://nhentai.net)

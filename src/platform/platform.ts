@@ -42,6 +42,9 @@ export class Result<T> {
  */
 export interface Matcher<P> {
 
+  /** Cancel site-specific work when the viewer is torn down. */
+  dispose?(): void;
+
   /** STEP 1: Fetch chapter information
    *  Some sites’ galleries have no concept of chapters — this step can be skipped.  
    *  In `BaseMatcher`, `fetchChapters` has a default implementation that returns a single default chapter.  
@@ -121,7 +124,7 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
     return [new Chapter(0, "Default", window.location.href)];
   }
 
-  abstract fetchPagesSource(source: Chapter): AsyncGenerator<Result<P>, Result<P>, Result<P>>;
+  abstract fetchPagesSource(source: Chapter): AsyncGenerator<Result<P>>;
   abstract parseImgNodes(pageSource: P, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
