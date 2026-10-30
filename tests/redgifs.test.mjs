@@ -167,7 +167,7 @@ test('healthy media transfers survive the 10-second idle limit while progress co
  const h=harness(()=>null);let now=0,seq=0;const timers=new Map();
  h.context.setTimeout=(fn,ms)=>{timers.set(++seq,{fn,at:now+ms});return seq;};
  h.context.clearTimeout=id=>timers.delete(id);
- function advance(ms){now+=ms;for(const [id,t] of [...timers])if(t.at<=now){timers.delete(id);t.fn();}}
+ function advance(ms){now+=ms;for(const [id,t] of timers)if(t.at<=now){timers.delete(id);t.fn();}}
  const originalGM=h.context.GM_XHR;
  h.context.GM_XHR=o=>{
   const handle=originalGM(o);
@@ -217,4 +217,17 @@ test('PageFetcher marks a finished profile done without an extra fetch', async (
  assert.equal(chapter.done, true);
  assert.equal(updates.length, 1);
  assert.equal(updates[0][3], true);
+});
+
+test('chapter discovery yields the author once and then completes', async () => {
+ const h = harness(() => auth);
+ const iterator = h.matcher.fetchChapters();
+ const first = await iterator.next();
+ assert.equal(first.done, false);
+ assert.equal(first.value.length, 1);
+ assert.equal(first.value[0].title, 'example_author');
+ assert.equal(first.value[0].source, h.context.window.location.href);
+ const last = await iterator.next();
+ assert.equal(last.done, true);
+ assert.equal(last.value, undefined);
 });
