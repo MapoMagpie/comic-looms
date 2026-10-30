@@ -156,8 +156,8 @@ export class RedGifsMatcher extends BaseMatcher<RedGif[]> {
 	isVideo(gif: RedGif | undefined): gif is RedGif {
 		return !!gif && /^[a-z0-9]+$/i.test(gif.id || "") && Number(gif.type) === 1;
 	}
-	async *fetchChapters(): AsyncGenerator<Chapter[], Chapter[], Chapter[]> {
-		return [new Chapter(0, this.author, this.pageURL)];
+	async *fetchChapters(): AsyncGenerator<Chapter[]> {
+		yield [new Chapter(0, this.author, this.pageURL)];
 	}
 	async *fetchPagesSource(): AsyncGenerator<Result<RedGif[]>> {
 		const seen = new Set<string>();
