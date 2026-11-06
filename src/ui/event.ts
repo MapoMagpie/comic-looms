@@ -17,12 +17,11 @@ import { createActionCustomPanel } from "./actions-custom";
 import { ADAPTER } from "../platform/adapt";
 import icons from "../utils/icons";
 import { FullViewGridManager } from "./full-view-grid-manager";
-import { isXShortcutEnabled, xShortcutDefaults } from "../utils/x-shortcuts";
 import { supportsMediaAction } from "../utils/media-action";
 
 export type Events = ReturnType<typeof initEvents>;
 
-export type AppEventIDInBigImgFrame = AppEventIDInAnimation | "step-image-prev"
+export type AppEventIDInBigImgFrame = "step-image-prev"
   | "step-image-next"
   | "exit-big-image-mode"
   | "step-to-first-image"
@@ -40,8 +39,6 @@ export type AppEventIDInBigImgFrame = AppEventIDInAnimation | "step-image-prev"
   | "go-prev-chapter"
   | "go-next-chapter";
 export type AppEventIDInFullViewGrid = "open-big-image-mode"
-  | "x-toggle-like"
-  | "x-toggle-bookmark"
   | "open-in-new-tab"
   | "cherry-pick-select"
   | "cherry-pick-select-range"
@@ -296,7 +293,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   }
 
   function initAppEvents(): AppEvents {
-    const inBigImageMode: Record<Exclude<AppEventIDInBigImgFrame, AppEventIDInAnimation>, AppEventDesc> = {
+    const inBigImageMode: Record<AppEventIDInBigImgFrame, AppEventDesc> = {
       "exit-big-image-mode": new AppEventDesc(
         ["escape", "enter"],
         icons.exitIcon,
@@ -440,8 +437,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
     };
     const inFullViewGrid: Record<AppEventIDInFullViewGrid, AppEventDesc> = {
-      "x-toggle-like": new AppEventDesc(xShortcutDefaults["x-toggle-like"], "♥", () => runXAction("x-toggle-like")),
-      "x-toggle-bookmark": new AppEventDesc(xShortcutDefaults["x-toggle-bookmark"], "🔖", () => runXAction("x-toggle-bookmark")),
       "open-big-image-mode": new AppEventDesc(
         ["enter"],
         icons.imageIcon,
@@ -628,7 +623,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
           EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true),
     };
-    return { inBigImageMode: { ...inBigImageMode, ...inAnimation }, inFullViewGrid, inAnimation, inMain }
+    return { inBigImageMode, inFullViewGrid, inAnimation, inMain }
   }
   const appEvents = initAppEvents();
 
@@ -639,7 +634,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const target = event.composedPath().find(item => item instanceof HTMLElement) as HTMLElement | undefined;
     if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
-    if (runXShortcut(event)) return;
     const key = parseKey(event);
     const found = Object.entries(appEvents.inBigImageMode).filter(entry => !entry[1].noKeyboard).find(([id, desc]) => {
       if (id.startsWith("video-") && !supportsMediaAction(BIFM.mediaKind(), id)) return false;
@@ -654,11 +648,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   function fullViewGridKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.root.classList.contains("ehvp-root-collapse")) return;
-    const target = event.composedPath().find(item => item instanceof HTMLElement) as HTMLElement | undefined;
-    const editing = !!target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
     const key = parseKey(event);
-    const found = Object.entries(appEvents.inFullViewGrid).filter(([id, desc]) => !desc.noKeyboard &&
-      (!id.startsWith("x-toggle-") || (!BIFM.visible && isXShortcutEnabled(location.hostname, editing, event instanceof KeyboardEvent && event.repeat)))).find(([id, desc]) => {
+    const found = Object.entries(appEvents.inFullViewGrid).filter(entry => !entry[1].noKeyboard).find(([id, desc]) => {
       const override = ADAPTER.conf.keyboards.inFullViewGrid[id as AppEventIDInFullViewGrid];
       return ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key));
     });
@@ -670,32 +661,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
       event.preventDefault();
     }
-  }
-
-  function runXShortcut(event: KeyboardEvent | MouseEvent): boolean {
-    const target = event.composedPath().find(item => item instanceof HTMLElement) as HTMLElement | undefined;
-    const editing = !!target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
-    if (!isXShortcutEnabled(location.hostname, editing, event instanceof KeyboardEvent && event.repeat)) return false;
-    const key = parseKey(event);
-    for (const id of ["x-toggle-like", "x-toggle-bookmark"] as const) {
-      const override = ADAPTER.conf.keyboards.inFullViewGrid[id];
-      if (!(override?.length ? override : xShortcutDefaults[id]).includes(key)) continue;
-      event.preventDefault();
-      runXAction(id);
-      return true;
-    }
-    return false;
-  }
-
-  function runXAction(id: "x-toggle-like" | "x-toggle-bookmark") {
-    if (!isXShortcutEnabled(location.hostname, false, false)) return;
-    const hovered = HTML.fullViewGrid.querySelector(".img-node:hover");
-    const focused = (HTML.root.getRootNode() as ShadowRoot).activeElement?.closest(".img-node");
-    const element = hovered ?? focused;
-    const node = BIFM.visible ? IFQ[BIFM.currentIndex]?.node : element ? IFQ.find(imf => imf.node.root === element)?.node : IFQ[IFQ.currIndex]?.node;
-    const action = node?.actions.find(action => action.id === id);
-    if (!node || !action) return;
-    void action.run(node).catch(error => EBUS.emit("notify-message", "error", String(error)));
   }
 
   function keyboardEvent(event: KeyboardEvent | MouseEvent) {

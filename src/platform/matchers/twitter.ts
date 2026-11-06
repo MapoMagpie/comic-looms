@@ -2,19 +2,10 @@ import { GalleryMeta } from "../../download/gallery-meta";
 import ImageNode, { NodeAction } from "../../img-node";
 import { Chapter } from "../../page-fetcher";
 import { evLog } from "../../utils/ev-log";
-import { GM_XHR } from "../../utils/query";
+import { GM_XHR, simpleFetch } from "../../utils/query";
 import { transactionId, uuid } from "../../utils/random";
 import { ADAPTER } from "../adapt";
 import { BaseMatcher, OriginMeta, Result } from "../platform";
-import { streamHomeLists, observeListRequests } from "./twitter-lists";
-import { applyTweetState, readTweetState, trackTweetActions, startTweetStateSync, publishTweetState, newestTweetState } from "./twitter-action-state";
-import { performTweetAction } from "./twitter-actions";
-
-observeListRequests();
-if (/^(x|twitter)\.com$/.test(location.hostname)) {
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTweetStateSync, { once: true });
-  else startTweetStateSync();
-}
 
 type Size = {
   h: number,
@@ -65,6 +56,8 @@ type Legacy = {
       },
     }
   },
+  bookmarked: boolean,
+  favorited: boolean,
 }
 
 type ItemResult = {
@@ -134,6 +127,15 @@ type HomeConversation = {
 };
 
 type Instructions = [UserMediaAddToModule, UserMediaEntries];
+
+export type TwitterList = {
+  id: string,
+  id_str: string,
+  name: string,
+  cover?: string,
+  mode: "Private" | "Public",
+  pinning: boolean,
+};
 
 interface TwitterAPIClient {
   fetchChapters(): AsyncGenerator<Chapter[]>;
@@ -251,30 +253,69 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
   myID?: string;
 
   async *fetchChapters(): AsyncGenerator<Chapter[]> {
-    let chapters = [
-      new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
-      new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
-      new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+    yield [
+      new Chapter(1, "For you", window.location.href),
+      new Chapter(2, "Following", window.location.href),
+      new Chapter(3, "Your Likes", window.location.href),
     ];
-    try {
-      let nextID = 100;
-      this.listAPIs.clear();
-      for await (const lists of streamHomeLists(() => createHeader(this.uuid))) {
-        const listChapters = lists.map(list => {
-          const id = nextID++;
-          const api = new TwitterListsAPI();
-          api.listID = list.id;
-          this.listAPIs.set(id, api);
-          return new Chapter(id, list.name, `${location.origin}/i/lists/${list.id}`, list.cover);
-        });
-        chapters.push(...listChapters);
-        if (chapters.length) yield chapters;
-        chapters = [];
-      }
-    } catch (error) {
-      evLog("debug", "Unable to discover X home lists", error);
+    const listChapters = await this.fetchListChapters();
+    if (listChapters.length > 0) {
+      yield listChapters;
     }
-    if (chapters.length) yield chapters;
+  }
+
+  // TODO: now only query 100 lists at once.
+  private async fetchListChapters(): Promise<Chapter[]> {
+    let nextID = 100;
+    this.listAPIs.clear();
+    const h: Record<string, string> = {};
+    createHeader(this.uuid).forEach((v, k) => { h[k] = v });
+    const features = "&features=%7B%22rweb_video_screen_enabled%22%3Afalse%2C%22rweb_cashtags_enabled%22%3Atrue%2C%22profile_label_improvements_pcf_label_in_post_enabled%22%3Atrue%2C%22responsive_web_profile_redirect_enabled%22%3Atrue%2C%22rweb_tipjar_consumption_enabled%22%3Afalse%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Afalse%2C%22responsive_web_grok_analyze_post_followups_enabled%22%3Atrue%2C%22rweb_cashtags_composer_attachment_enabled%22%3Atrue%2C%22responsive_web_jetfuel_frame%22%3Atrue%2C%22rweb_sports_post_context_enabled%22%3Atrue%2C%22x_elections_post_context_enabled%22%3Atrue%2C%22responsive_web_grok_share_attachment_enabled%22%3Atrue%2C%22responsive_web_grok_annotations_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22rweb_conversational_replies_downvote_enabled%22%3Afalse%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22content_disclosure_indicator_enabled%22%3Atrue%2C%22content_disclosure_ai_generated_indicator_enabled%22%3Atrue%2C%22responsive_web_grok_show_grok_translated_post%22%3Atrue%2C%22responsive_web_grok_analysis_button_from_backend%22%3Atrue%2C%22post_ctas_fetch_enabled%22%3Atrue%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Afalse%2C%22responsive_web_nested_quote_preview_enabled%22%3Atrue%2C%22responsive_web_grok_image_annotation_enabled%22%3Atrue%2C%22responsive_web_grok_imagine_annotation_enabled%22%3Atrue%2C%22responsive_web_made_on_x_label_enabled%22%3Afalse%2C%22responsive_web_grok_community_note_auto_translation_is_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D";
+    const resp = await simpleFetch(
+      `${window.location.origin}/i/api/graphql/HeY9oqJxWKHSTCoBXaWnHg/ListsManagementPageTimeline?variables=%7B%22count%22%3A100%7D${features}`,
+      "json", h).catch(Error);
+    if (resp instanceof Error) {
+      evLog("error", "fetch lists failed: " + resp.message);
+      return [];
+    };
+    const instructions = resp.data?.viewer?.list_management_timeline?.timeline?.instructions as any[];
+    if (!instructions || instructions.length === 0) {
+      return [];
+    }
+    const entries = instructions.find(inst => inst.type === "TimelineAddEntries")?.entries as any[];
+    if (!entries || entries.length === 0) {
+      return [];
+    }
+    const items = entries.find(entry => entry.entryId === "owned-subscribed-list-module-0")?.content?.items as any[];
+    if (!items || items.length === 0) {
+      return [];
+    }
+    let lists: TwitterList[] = [];
+    let pinningLists: TwitterList[] = [];
+    for (const item of items) {
+      const list = item.item?.itemContent?.list;
+      const data = {
+        id: list.id,
+        id_str: list.id_str,
+        name: list.name,
+        mode: list.mode,
+        pinning: list.pinning,
+        cover: (list.custom_banner_media?.media_info?.original_img_url) ?? (list.default_banner_media?.media_info?.original_img_url),
+      };
+      if (data.pinning) {
+        pinningLists.push(data);
+      } else {
+        lists.push(data);
+      }
+    }
+    lists.unshift(...pinningLists);
+    return lists.map(list => {
+      const id = nextID++;
+      const api = new TwitterListsAPI();
+      api.listID = list.id_str;
+      this.listAPIs.set(id, api);
+      return new Chapter(id, `${list.pinning ? "📌 " : ""}${list.name}${list.mode === "Private" ? " 🔒" : ""}`, `${location.origin}/i/lists/${list.id_str}`, list.cover);
+    });
   }
   async next(chapter: Chapter, listCursor?: string): Promise<[Item[], string | undefined]> {
     const listAPI = this.listAPIs.get(chapter.id);
@@ -295,7 +336,7 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
         const features = `{"rweb_video_screen_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"responsive_web_profile_redirect_enabled":false,"rweb_tipjar_consumption_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":false,"responsive_web_grok_analyze_post_followups_enabled":true,"responsive_web_jetfuel_frame":true,"responsive_web_grok_share_attachment_enabled":true,"responsive_web_grok_annotations_enabled":false,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"responsive_web_grok_show_grok_translated_post":false,"responsive_web_grok_analysis_button_from_backend":true,"post_ctas_fetch_enabled":true,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_grok_image_annotation_enabled":true,"responsive_web_grok_imagine_annotation_enabled":true,"responsive_web_grok_community_note_auto_translation_is_enabled":false,"responsive_web_enhance_cards_enabled":false}`;
         const body = `{"variables":{"count":20,${cursorStr}"includePromotedContent":true,"enableRanking":false,"seenTweetIds":[${seenTweetIds}]},"features":${features},"queryId":"HN6oP_7h7HayqyYimz97Iw"}`;
         return [url, body];
-      } else {
+      } else { // your likes
         if (!this.myID) this.myID = getMyID();
         if (!this.myID) throw new Error("cannot find my id from current page");
         const cursorStr = cursor ? `"cursor":"${cursor}",` : "";
@@ -396,14 +437,14 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      const [mediaList, tweetID] = checkoutMedias(item);
+      const [mediaList, tweetID, bookmarked, favorited] = checkoutMedias(item);
       if (mediaList.length === 0) {
         const user = item.itemContent?.tweet_results?.result?.core?.user_results?.result?.legacy?.screen_name ?? item.itemContent?.tweet_results?.result?.core?.user_results?.result?.core?.screen_name;
         const rest_id = item.itemContent.tweet_results.result.rest_id;
         evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
         continue;
       }
-      const actions = this.tweetActions(tweetID, item);
+      const actions = this.tweetActions(tweetID, bookmarked, favorited);
       this.postCount++;
       if (ADAPTER.conf.reverseMultipleImagesPost) {
         mediaList.reverse();
@@ -425,33 +466,27 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     return list;
   }
 
-  private actionsByTweet = new Map<string, NodeAction[]>();
-
-  private tweetActions(tweetID: string | undefined, item: Item): NodeAction[] {
-    if (tweetID && this.actionsByTweet.has(tweetID)) return this.actionsByTweet.get(tweetID)!;
-    let actionLike: NodeAction | undefined;
-    let actionBookmark: NodeAction | undefined;
-    if (tweetID) {
-      actionLike = new NodeAction("♥", "like this tweet", async () => {
-        const target = !(newestTweetState(tweetID).liked ?? actionLike!.done);
-        await performTweetAction(target ? "FavoriteTweet" : "UnfavoriteTweet", tweetID, () => createHeader(this.uuid));
-        publishTweetState(tweetID, { liked: target });
-        return target;
-      }, true);
-      actionLike.id = "x-toggle-like";
-      actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
-        const target = !(newestTweetState(tweetID).bookmarked ?? actionBookmark!.done);
-        await performTweetAction(target ? "CreateBookmark" : "DeleteBookmark", tweetID, () => createHeader(this.uuid));
-        publishTweetState(tweetID, { bookmarked: target });
-        return target;
-      }, true);
-      actionBookmark.id = "x-toggle-bookmark";
-      const actions = { like: actionLike, bookmark: actionBookmark };
-      applyTweetState(actions, readTweetState(item, tweetID));
-      trackTweetActions(tweetID, actions);
-      this.actionsByTweet.set(tweetID, [actionLike, actionBookmark]);
-    }
-    return [actionLike, actionBookmark].filter((action): action is NodeAction => action !== undefined);
+  private tweetActions(tweetID: string | undefined, bookmarked: boolean, favorited: boolean): NodeAction[] {
+    if (!tweetID) return [];
+    const actionLike = new NodeAction("❤", "like this tweet", async (self, _node, trigger) => {
+      let operation: TweetOperation = self.data === "liked" ? "UnfavoriteTweet" : "FavoriteTweet";
+      await performTweetAction(operation, tweetID, this.uuid);
+      self.data = operation === "FavoriteTweet" ? "liked" : "unknown";
+      self.icon = operation === "FavoriteTweet" ? "Cancel ❤" : "❤";
+      trigger.textContent = self.icon;
+    }, true);
+    actionLike.data = favorited ? "liked" : undefined;
+    actionLike.icon = favorited ? "Cancel ❤" : "❤";
+    const actionBookmark = new NodeAction("🔖", "bookmark this tweet", async (self, _node, trigger) => {
+      let operation: TweetOperation = self.data === "bookmarked" ? "DeleteBookmark" : "CreateBookmark";
+      await performTweetAction(operation, tweetID, this.uuid);
+      self.data = operation === "CreateBookmark" ? "bookmarked" : "unknown";
+      self.icon = operation === "CreateBookmark" ? "Del 🔖" : "🔖";
+      trigger.textContent = self.icon;
+    }, true);
+    actionBookmark.data = bookmarked ? "bookmarked" : undefined;
+    actionBookmark.icon = bookmarked ? "Del 🔖" : "🔖";
+    return [actionLike, actionBookmark];
   }
 
   private mediaNode(media: Media, index: number, actions: NodeAction[]) {
@@ -471,7 +506,6 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
     const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
     const node = new ImageNode(src, href, title, undefined, largeSrc, wh);
     node.actions.push(...actions);
-
     this.selectVideoVariant(node, media.video_info);
     return node;
   }
@@ -583,37 +617,114 @@ function homeForYouEntriesToItems(entries: HomeForYouEntries): { items: Item[], 
   return { items, ids, cursor };
 }
 
-function checkoutMedias(item: Item): [Media[], string | undefined] {
-  // item?.itemContent?.tweet_results?.result?.legacy
-  // item?.itemContent?.tweet_results?.result?.tweet?.legacy
-  // item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy;
-  let media1 = item.itemContent?.tweet_results?.result?.legacy?.entities?.media;
-  let media2 = item.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.tweet?.legacy?.entities?.media;
-  let media3 = item.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy?.entities?.media;
-  let media4 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
-  let media5 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.retweeted_status_result?.result?.tweet?.legacy?.entities?.media;
-  let media6 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.retweeted_status_result?.result?.legacy?.entities?.media;
+/**
+ * A tweet is wrapped inconsistently in the timeline response: its legacy payload
+ * sits at the top level or one level deeper under tweet.legacy, and each of those
+ * may in turn hold the legacy of the retweeted/quoted tweet.
+ * Flatten all 6 possible locations into a single list.
+ */
+function tweetLegacies(item: Item): Legacy[] {
+  const result = item.itemContent?.tweet_results?.result;
+  return [result?.legacy, result?.tweet?.legacy]
+    .flatMap(outer => [
+      outer,
+      outer?.retweeted_status_result?.result?.tweet?.legacy,
+      outer?.retweeted_status_result?.result?.legacy,
+    ])
+    .filter((legacy): legacy is Legacy => !!legacy);
+}
 
-  const mediaIdSet = new Set();
-  let medias = [media1 ?? [], media2 ?? [], media3 ?? [], media4 ?? [], media5 ?? [], media6 ?? [],].flat();
-  let ret = [];
-  for (const me of medias) {
-    if (!mediaIdSet.has(me.id_str)) {
-      ret.push(me);
-      mediaIdSet.add(me.id_str);
-    }
+function checkoutMedias(item: Item): [Media[], string | undefined, boolean, boolean] {
+  const legacies = tweetLegacies(item);
+
+  const medias: Media[] = [];
+  const mediaIDs = new Set<string>();
+  for (const media of legacies.flatMap(legacy => legacy.entities?.media ?? [])) {
+    if (mediaIDs.has(media.id_str)) continue;
+    mediaIDs.add(media.id_str);
+    medias.push(media);
   }
 
-  let tweetId1 = item.itemContent?.tweet_results?.result?.legacy?.id_str;
-  let tweetId2 = item.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.tweet?.legacy?.id_str;
-  let tweetId3 = item.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy?.id_str;
-  let tweetId4 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.id_str;
-  let tweetId5 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.retweeted_status_result?.result?.tweet?.legacy?.id_str;
-  let tweetId6 = item.itemContent?.tweet_results?.result?.tweet?.legacy?.retweeted_status_result?.result?.legacy?.id_str;
-  let tweewId = tweetId6 ?? tweetId5 ?? tweetId4 ?? tweetId3 ?? tweetId2 ?? tweetId1;
-  return [ret, tweewId];
+  // Prefer the innermost (retweeted/quoted) tweet id, matching the order of the original ?? chain.
+  const tweetID = legacies.findLast(legacy => legacy.id_str != null)?.id_str;
+  const bookmarked = legacies.some(legacy => legacy.bookmarked);
+  const favorited = legacies.some(legacy => legacy.favorited);
 
+  return [medias, tweetID, bookmarked, favorited];
 }
+
+
+export async function refreshActionsQueryId(): Promise<Record<string, string>> {
+  const urls = [...Array.from(document.scripts).map(script => script.src),
+  ...performance.getEntriesByType("resource").map(entry => entry.name)];
+  const url = urls.find(url => /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web[^/]*\/main\.[\w]+\.js$/.test(url));
+  if (!url) throw new Error("can not find responsive-web/client-web/main.js url");
+  const mainJsRaw = await simpleFetch(url, "text");
+  const definitions = mainJsRaw.matchAll(/queryId\s*:\s*["']([\w-]+)["']\s*,\s*operationName\s*:\s*["'](FavoriteTweet|UnfavoriteTweet|CreateBookmark|DeleteBookmark)["']/g);
+  const queryIdMap: Record<string, string> = {};
+  for (const definition of definitions) {
+    const operation = definition[2];
+    const queryId = definition[1];
+    queryIdMap[operation] = queryId;
+  }
+  if (Object.keys(queryIdMap).length === 0) throw new Error("can not match queryId and operationName from main.js");
+  window.localStorage.setItem("x-operation-queryIds", JSON.stringify(queryIdMap));
+  return queryIdMap;
+}
+
+export type TweetOperation = "FavoriteTweet" | "UnfavoriteTweet" | "CreateBookmark" | "DeleteBookmark";
+
+let xOperationQueryIds: Record<string, string> | undefined = undefined;
+
+// TODO: extract other operations queryId, e.g. Like, HomeTimeline, HomeLatestTimeLine 
+function getQueryIdsByLocalStorage(): Record<string, string> {
+  const raw = window.localStorage.getItem("x-operation-queryIds");
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch (_err) {
+      evLog("error", "parse [x-operation-queryIds] error, got raw from localstorage: " + raw);
+    }
+  }
+  return {
+    "FavoriteTweet": "lI07N6Otwv1PhnEgXILM7A",
+    "UnfavoriteTweet": "ZYKSe-w7KEslx3JhSIk5LA",
+    "CreateBookmark": "aoDbu3RHznuiSkQ9aNM67Q",
+    "DeleteBookmark": "Wlmlj2-xzyS1GN3a6cj-mQ",
+  };
+}
+
+async function getQueryId(operation: TweetOperation, refresh: boolean = false): Promise<string> {
+  if (xOperationQueryIds === undefined) {
+    xOperationQueryIds = getQueryIdsByLocalStorage();
+  }
+  if (refresh) {
+    xOperationQueryIds = await refreshActionsQueryId();
+  }
+  if (!xOperationQueryIds[operation]) throw new Error(`cannot get queryId for operation [${operation}]`);
+  return xOperationQueryIds[operation];
+}
+
+export async function performTweetAction(operation: TweetOperation, tweetID: string, uuid: string) {
+  let queryId = await getQueryId(operation);
+  try {
+    await sendAction(queryId, operation, tweetID, uuid);
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "X action HTTP 404") throw error;
+    queryId = await getQueryId(operation, true);
+    await sendAction(queryId, operation, tweetID, uuid);
+  }
+}
+
+async function sendAction(queryId: string, operation: TweetOperation, tweetID: string, uuid: string) {
+  await window.fetch(`https://x.com/i/api/graphql/${queryId}/${operation}`, {
+    "headers": createHeader(uuid),
+    "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"" + queryId + "\"}",
+    "method": "POST",
+    "mode": "cors",
+  });
+}
+
 ADAPTER.addSetup({
   name: "Twitter | X",
   workURLs: [
