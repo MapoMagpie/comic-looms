@@ -28,9 +28,6 @@ type Rect = {
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
 type OnResize = () => void;
 
-import { NodeAction } from "./utils/node-action";
-export { NodeAction } from "./utils/node-action";
-
 export default class ImageNode {
   root?: HTMLElement;
   thumbnailSrc: string;
@@ -128,33 +125,18 @@ export default class ImageNode {
         this.onclick!(event);
       }, { passive: false, capture: false });
     }
-    let hovered = false;
-    const hideActions = () => {
-      if (!hovered && !this.root!.querySelector(".img-node-action-btn-processing")) {
-        this.root!.querySelector(".img-node-actions")?.remove();
-      }
-    };
-    this.root.addEventListener("mouseleave", () => { hovered = false; hideActions(); });
-    this.root.addEventListener("action-visual-settled", hideActions);
+    this.root.addEventListener("mouseleave", () => { this.root!.querySelector(".img-node-actions")?.remove(); });
     this.root.addEventListener("mouseenter", () => {
-      hovered = true;
       if (this.actions.length === 0) return;
       if (this.root!.querySelector(".img-node-actions")) return;
       const actionContainer = document.createElement("div");
       actionContainer.classList.add("img-node-actions");
       for (const action of this.actions) {
-        const actionElem = document.createElement("button");
-        actionElem.classList.add("img-node-action-btn");
-        actionElem.textContent = action.icon;
-        action.bind(actionElem);
+        const actionElem = action.createButton();
         actionElem.addEventListener("click", (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
-          actionElem.classList.remove("img-node-action-btn-error");
-          void action.run(this).catch(reason => {
-            actionElem.classList.add("img-node-action-btn-error");
-            EBUS.emit("notify-message", "error", `execute action [${action.icon}] failed, reason: ${reason}`);
-          });
+          action.run(this, actionElem);
         }, { passive: false, capture: true });
         actionContainer.appendChild(actionElem);
       }
@@ -332,3 +314,70 @@ export default class ImageNode {
   }
 }
 
+type ActionFunc = (action: NodeAction, node: ImageNode, trigger: HTMLElement) => Promise<void>;
+export class NodeAction {
+  state: "init" | "processing" | "done" | "error" = "init";
+  icon: string;
+  description: string;
+  func: ActionFunc;
+  reusable: boolean = false;
+  private inFlight?: Promise<void>;
+  // save some status for ActionFunc to change beahiver // TODO
+  public data?: any;
+  constructor(icon: string, description: string, func: ActionFunc, reusable: boolean = false) {
+    this.icon = icon;
+    this.description = description;
+    this.func = func;
+    this.reusable = reusable;
+  }
+
+  public createButton(): HTMLElement {
+    const actionElem = document.createElement("button");
+    actionElem.classList.add("img-node-action-btn");
+    actionElem.textContent = this.icon;
+    if (this.inFlight) {
+      actionElem.disabled = true;
+      this.inFlight.finally(() => this.syncButtonStyle(actionElem, this.icon));
+    }
+    actionElem.title = this.description;
+    this.syncButtonStyle(actionElem, this.icon);
+    return actionElem;
+  }
+
+  private syncButtonStyle(trigger: HTMLElement, icon: string) {
+    trigger.textContent = icon;
+    trigger.classList.remove("img-node-action-btn-processing", "img-node-action-btn-done", "img-node-action-btn-error");
+    switch (this.state) {
+      case "processing": {
+        trigger.classList.add("img-node-action-btn-processing");
+        break;
+      }
+      case "done": {
+        trigger.classList.add("img-node-action-btn-done");
+        break;
+      }
+      case "error": {
+        trigger.classList.add("img-node-action-btn-error");
+        break;
+      }
+    }
+  }
+
+  async run(node: ImageNode, trigger: HTMLElement) {
+    if (this.state === "processing" || (this.state === "done" && !this.reusable)) return;
+    this.state = "processing";
+    trigger.classList.remove("img-node-action-btn-done", "img-node-action-btn-error");
+    trigger.classList.toggle("img-node-action-btn-processing", true);
+    try {
+      this.inFlight = this.func(this, node, trigger);
+      await this.inFlight;
+      this.state = "done";
+    } catch (error) {
+      this.state = "error";
+      EBUS.emit("notify-message", "error", `execute action [${this.icon}] failed, reason: ${error}`);
+    } finally {
+      this.syncButtonStyle(trigger, this.icon);
+      this.inFlight = undefined;
+    }
+  }
+}

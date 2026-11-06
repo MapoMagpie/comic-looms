@@ -312,7 +312,7 @@ export class PageFetcher {
           const imf = new IMGFetcher(index + len, imgNode, this.matcher, chapterIndex, pageChapterID);
           // add node actions
           this.nodeActionDesc.forEach(nad => {
-            const f = async (node: ImageNode) => {
+            const f = async (_self: NodeAction, node: ImageNode) => {
               const result = await nad.fun(imf, node, GM_XHR, EBUS) as { data?: Blob };
               if (result?.data) {
                 imf.contentType = result.data.type;

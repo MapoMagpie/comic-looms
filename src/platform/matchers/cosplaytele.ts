@@ -92,8 +92,10 @@ class CosplayteleMatcher extends BaseMatcher<CosplayMedia[]> {
       const players = cosplayPlayers(doc, chapter.source);
       const thumbnail = cosplayCover(doc, chapter.source) || PLAYER_THUMB;
       for (const [index, embed] of players.entries()) {
-        videos.push({ url: thumbnail === PLAYER_THUMB ? DEFAULT_THUMBNAIL : thumbnail, thumbnail,
-          title: `JW Player ${index + 1} — hover and click ▶ (stream, not a download)`, embed, sourcePage: chapter.source });
+        videos.push({
+          url: thumbnail === PLAYER_THUMB ? DEFAULT_THUMBNAIL : thumbnail, thumbnail,
+          title: `JW Player ${index + 1} — hover and click ▶ (stream, not a download)`, embed, sourcePage: chapter.source
+        });
       }
     }
     if (!images.length && !videos.length) throw new Error("Cosplaytele: no gallery images or videos found");
@@ -106,7 +108,7 @@ class CosplayteleMatcher extends BaseMatcher<CosplayMedia[]> {
       if (img.embed) {
         node.picked = false;
         node.openEmbeddedMedia = () => openPlayer(img.embed!, img.sourcePage ?? location.href);
-        node.actions.push(new NodeAction("▶", "Play in original JW Player", async () => openPlayer(img.embed!, img.sourcePage ?? location.href), true));
+        node.actions.push(new NodeAction("▶", "Play in original JW Player", async () => openPlayer(img.embed!, img.sourcePage ?? location.href)));
       }
       return node;
     });
