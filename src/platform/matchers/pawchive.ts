@@ -1,7 +1,8 @@
 import ImageNode from "../../img-node";
+import { evLog } from "../../utils/ev-log";
 import { isImage, isVideo } from "../../utils/media-helper";
 import { ADAPTER } from "../adapt";
-import { BaseMatcher, OriginMeta, Result } from "../platform"
+import { BaseMatcher, OriginMeta, Result, SubData } from "../platform"
 
 interface PawchiveList {
   next(): AsyncGenerator<Result<PawchiveResult[]>>;
@@ -186,10 +187,14 @@ class PawchiveMatcher extends BaseMatcher<PawchiveResult[]> {
     const originSrcMap = new Map();
     for (const chunk of chunks) {
       for (const file of chunk.list) {
-        if (!file.path) throw new Error("cannot find image file path");
+        // if (!file.path) throw new Error("cannot find image file path");
+        // if (!file.name) throw new Error("cannot find image file name");
         // if (!file.name || !file.server) throw new Error("cannot find image or video name and server");
-        if (!file.name) throw new Error("cannot find image file name");
-        const node = newImageNode(chunk.res.id, chunk.res.user, chunk.res.service, file.path, file.name);
+        if (!file.path || !file.name) {
+          evLog("error", `resource ${chunk.res.id} miss filepath or filename`);
+          continue;
+        }
+        const node = newImageNode(chunk.res.id, chunk.res.user, chunk.res.service, file.path, file.name, file.server);
         if (node) {
           if (originSrcMap.has(node.originSrc!)) {
             continue;
@@ -204,6 +209,19 @@ class PawchiveMatcher extends BaseMatcher<PawchiveResult[]> {
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     if (!node.originSrc) throw new Error("cannot find pawchive image file: " + node.href);
     return { url: node.originSrc };
+  }
+
+  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, status: number, node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]> {
+    if (status === 404) {
+      // node.actions = [
+      //   new NodeAction("X", "replace origin url to thumbnail url", async (_self, nd) => { nd.originSrc = nd.thumbnailSrc; })
+      // ];
+      if (node.thumbnailSrc) {
+        node.originSrc = node.thumbnailSrc;
+      }
+      throw new Error("this server is missing the content from " + node.originSrc);
+    }
+    return [data, contentType];
   }
   // async batchFetchPathServerMap(chunks: { res: KemonoResult; list: KemonoFile[]; needFetchPost: boolean; }[]) {
   //   const urls = chunks.filter(chunk => chunk.needFetchPost).map(chunk =>

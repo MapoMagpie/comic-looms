@@ -97,7 +97,7 @@ class Comic18Matcher extends BaseMatcher<string> {
     return list;
   }
 
-  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, node: ImageNode): Promise<[Uint8Array<ArrayBuffer>, string]> {
+  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, _status: number, node: ImageNode): Promise<[Uint8Array<ArrayBuffer>, string]> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
     const matches = node.originSrc!.match(reg);
     const gid = matches![1];

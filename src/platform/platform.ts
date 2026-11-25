@@ -93,7 +93,7 @@ export interface Matcher<P> {
    *  This step can be skipped for most sites — `BaseMatcher` already has a default implementation.  
    *  However, some sites encrypt, scramble, or segment image data. In such cases, this step should handle decryption or restoration.
    */
-  processData(data: Uint8Array<ArrayBuffer>, contentType: string, node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]>;
+  processData(data: Uint8Array<ArrayBuffer>, contentType: string, status: number, node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]>;
   headers(node: ImageNode): Record<string, string>;
   appendNewChapters(url: string, old: Chapter[]): Promise<Chapter[]>;
 }
@@ -186,7 +186,7 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
     return new GalleryMeta(window.location.href, document.title || "unknown");
   }
 
-  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, _node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]> {
+  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, _status: number, _node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]> {
     return [data, contentType];
   }
 

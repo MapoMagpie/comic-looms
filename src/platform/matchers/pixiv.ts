@@ -234,7 +234,7 @@ class PixivMatcher extends BaseMatcher<ArtistPIDs[]> {
     }
   }
 
-  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]> {
+  async processData(data: Uint8Array<ArrayBuffer>, contentType: string, _status: number, node: ImageNode): Promise<[Uint8Array<ArrayBuffer> | SubData, string]> {
     const meta = this.ugoiraMetas[node.originSrc!];
     if (!meta) return [data, contentType];
     const zipReader = new zip_js.ZipReader(new zip_js.Uint8ArrayReader(data));

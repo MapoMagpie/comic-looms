@@ -126,8 +126,9 @@ export class IMGFetcher {
             this.stage = FetchState.DATA;
             return fetchMachine();
           case FetchState.DATA:
-            [this.data, this.contentType] = await this.fetchImageData();
-            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node);
+            let respStatus = 0;
+            [this.data, this.contentType, respStatus] = await this.fetchImageData();
+            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, respStatus, this.node);
             this.node.updateTagByPrefix("mime:" + (this.contentType ?? "unknown")); // TODO: trigger filter.filterNodes
             if (this.contentType.startsWith("text") && !(this.data instanceof SubData)) {
               // if (this.data.byteLength < 100000) { // less then 100kb
@@ -170,12 +171,12 @@ export class IMGFetcher {
     return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === FetchState.FAILED, this.chapterID);
   }
 
-  async fetchImageData(): Promise<[Uint8Array<ArrayBuffer>, string]> {
+  async fetchImageData(): Promise<[Uint8Array<ArrayBuffer>, string, number]> {
     const data = await this.matcher.fetchImageData(this);
     if (data == null) {
       throw new Error(`fetch image data is empty, image url:${this.node.originSrc}`);
     }
-    return [new Uint8Array(await data[0].arrayBuffer()), data[0].type];
+    return [new Uint8Array(await data[0].arrayBuffer()), data[0].type, data[1]];
   }
 
   render(force?: boolean) {
