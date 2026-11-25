@@ -546,7 +546,14 @@ function getUserID(): string | undefined {
   const followBTNs = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-testid][aria-label]"));
   if (followBTNs.length === 0) return undefined;
   const theBTN = followBTNs.find(btn => (btn.getAttribute("aria-label") ?? "").toLowerCase().includes(`@${userName.toLowerCase()}`)) || followBTNs[0];
-  return theBTN.getAttribute("data-testid")!.match(/(\d+)/)?.[1];
+  const id = theBTN.getAttribute("data-testid")!.match(/(\d+)/)?.[1];
+  if (id) return id;
+  const userProfile = document.querySelector("script[data-testid=\"UserProfileSchema-test\"]")?.textContent;
+  if (userProfile) {
+    const profile = JSON.parse(userProfile);
+    return profile?.mainEntity?.identifier;
+  }
+  return undefined;
 }
 // authorization: "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
 // "cache-control": "no-cache"
