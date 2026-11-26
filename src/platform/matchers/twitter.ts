@@ -405,7 +405,7 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
 
   constructor() {
     super();
-    if (/\/home$/.test(window.location.href)) {
+    if (/\/home(\?lang.*)?$/.test(window.location.href)) {
       this.api = new TwitterHomeForYouAPI();
     } else if (/i\/lists\/\d+$/.test(window.location.href)) {
       this.api = new TwitterListsAPI();
@@ -536,12 +536,16 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
 }
 
 function getMyID(): string | undefined {
-  const id = Array.from(document.querySelectorAll("script"))
-    .find((sc) => sc.innerText.startsWith("window.__INITIAL_STATE__"))
-    ?.innerText.match(/"id_str":\s?"(\d+)"/)?.[1];
+  // get cookie for twid
+  let id = document.cookie.match(/twid=u%3D(\d+)/)?.[1];
   if (id) return id;
   const anchor = document.querySelector<HTMLAnchorElement>("a[href*='/i/connect_people?user_id=']");
-  return anchor?.href.match(/user_id=(\d+)/)?.[1];
+  id = anchor?.href.match(/user_id=(\d+)/)?.[1];
+  if (id) return id;
+  id = Array.from(document.querySelectorAll("script"))
+    .find((sc) => sc.innerText.startsWith("window.__INITIAL_STATE__"))
+    ?.innerText.match(/"id_str":\s?"(\d+)"/)?.[1];
+  return id;
 }
 
 function getUserID(): string | undefined {
