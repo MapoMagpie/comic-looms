@@ -536,9 +536,12 @@ class TwitterMatcher extends BaseMatcher<Item[]> {
 }
 
 function getMyID(): string | undefined {
-  return Array.from(document.querySelectorAll("script"))
+  const id = Array.from(document.querySelectorAll("script"))
     .find((sc) => sc.innerText.startsWith("window.__INITIAL_STATE__"))
     ?.innerText.match(/"id_str":\s?"(\d+)"/)?.[1];
+  if (id) return id;
+  const anchor = document.querySelector<HTMLAnchorElement>("a[href*='/i/connect_people?user_id=']");
+  return anchor?.href.match(/user_id=(\d+)/)?.[1];
 }
 
 function getUserID(): string | undefined {
