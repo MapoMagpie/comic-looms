@@ -1068,6 +1068,7 @@ export class BigImageFrameManager {
       const [elem, reused] = findOrSetIndex(i);
       if (!elem) throw new Error(`BIFM.setElements cannot found element by index:[${i}], or found empty element`);
       const showing = i >= this.currentIndex && i < this.currentIndex + ADAPTER.conf.paginationIMGCount;
+      elem.inert = !showing;
       elements.push(elem);
       if (showing) {
         elem.classList.remove("bifm-node-hide")
@@ -1085,6 +1086,7 @@ export class BigImageFrameManager {
     this.renderingElements = [...elements];
     const remain = withIndex.map(i => {
       i.elem.setAttribute("d-index", "-1");
+      i.elem.inert = true;
       i.elem.innerHTML = "";
       i.elem.classList.add("bifm-node-hide")
       return i.elem;
