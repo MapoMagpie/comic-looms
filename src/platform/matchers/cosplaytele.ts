@@ -26,10 +26,25 @@ let activePlayer: HTMLDialogElement | undefined;
 
 function openPlayer(url: string, sourcePage: string) {
   if (activePlayer?.open) return;
-  const previousFocus = document.activeElement as HTMLElement | null;
+  const focused = document.activeElement;
+  const previousFocus = focused?.shadowRoot?.activeElement ?? focused;
+  // A focused poster can be recycled/hidden on the next page turn. Restore the
+  // reader itself instead, without scrolling a hidden poster back into view.
+  const returnFocus = previousFocus?.closest(".big-img-frame") ?? previousFocus;
   const dialog = document.createElement("dialog");
   activePlayer = dialog;
   const abort = new AbortController();
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    abort.abort();
+    frame.remove();
+    if (dialog.open) dialog.close();
+    dialog.remove();
+    if (activePlayer === dialog) activePlayer = undefined;
+    if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
+  };
   dialog.style.cssText = "padding:12px;background:#171717;color:white;border:0;width:90vw;max-width:1200px;";
   const close = document.createElement("button");
   close.textContent = "关闭视频 / Close";
@@ -48,23 +63,20 @@ function openPlayer(url: string, sourcePage: string) {
   frame.style.cssText = "display:block;width:100%;height:75vh;border:0;margin-top:8px;";
   dialog.append(close, original, frame);
   dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
+    if (event.target === dialog) cleanup();
   });
-  close.onclick = () => dialog.close();
-  dialog.addEventListener("cancel", event => { event.preventDefault(); dialog.close(); });
+  close.onclick = cleanup;
+  dialog.addEventListener("cancel", event => { event.preventDefault(); cleanup(); });
   window.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
-    event.preventDefault(); event.stopImmediatePropagation(); dialog.close();
+    event.preventDefault(); event.stopImmediatePropagation(); cleanup();
   }, { capture: true, signal: abort.signal });
   window.addEventListener("message", event => {
-    if (event.origin === "https://cossora.stream" && event.source === frame.contentWindow && event.data?.type === "comic-looms-close-player") dialog.close();
+    if (event.origin === "https://cossora.stream" && event.source === frame.contentWindow && event.data?.type === "comic-looms-close-player") cleanup();
   }, { signal: abort.signal });
-  dialog.addEventListener("close", () => {
-    abort.abort(); frame.remove(); dialog.remove(); activePlayer = undefined;
-    previousFocus?.focus();
-  }, { once: true });
+  dialog.addEventListener("close", cleanup, { once: true });
   document.body.append(dialog);
-  dialog.showModal();
+  try { dialog.showModal(); } catch (error) { cleanup(); throw error; }
   close.focus();
 }
 

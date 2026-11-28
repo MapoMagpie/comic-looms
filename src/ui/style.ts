@@ -346,6 +346,8 @@ export function styleCSS() {
   display: flex;
 }
 .bifm-node-hide {
+  pointer-events: none;
+  visibility: hidden;
   position: fixed;
   left: -100%;
   z-index: -1000;
